@@ -1,0 +1,866 @@
+# API Reference - CRM Ventas
+
+Referencia de los endpoints del **Orchestrator** (FastAPI) para **CRM Ventas** (Nexus Core). Base URL típica: `http://localhost:8000` en desarrollo o la URL del servicio en producción.
+
+## Prefijos en CRM Ventas
+
+| Prefijo | Contenido |
+|---------|-----------|
+| **`/auth`** | Login, registro, clínicas, me, profile (público o con JWT). |
+| **`/admin/core`** | Rutas administrativas: usuarios, tenants, settings, **chat** (tenants, sessions, messages, read, human-intervention, remove-silence), **stats/summary**, **chat/urgencies**, config/deployment, internal/credentials. Requieren **JWT + X-Admin-Token**. |
+| **`/admin/core/crm`** | Módulo CRM: **leads** (CRUD, phone/context), **clients**, **sellers**, **whatsapp/connections**, **templates**, **campaigns**, **agenda/events**. Requieren JWT + X-Admin-Token. |
+| **`/chat`** | POST: envío de mensaje al agente IA (usado por WhatsApp Service). |
+| **`/health`** | Health check (público). |
+
+## Documentación interactiva (OpenAPI / Swagger)
+
+En la misma base del Orchestrator están disponibles:
+
+| URL | Descripción |
+|-----|-------------|
+| **[/docs](http://localhost:8000/docs)** | **Swagger UI**: contrato completo, agrupado por tags (Auth, CRM Sales, etc.). Configurar **Bearer** (JWT) y **X-Admin-Token** en *Authorize*. |
+| **[/redoc](http://localhost:8000/redoc)** | **ReDoc**: documentación en formato lectura. |
+| **[/openapi.json](http://localhost:8000/openapi.json)** | Esquema OpenAPI 3.x en JSON para Postman, Insomnia o generación de clientes. |
+
+Sustituye `localhost:8000` por la URL del Orchestrator en tu entorno.
+
+---
+
+## Índice
+
+1. [Autenticación y headers](#autenticación-y-headers)
+2. [Auth (login, registro, perfil)](#auth-público-y-registro)
+3. [Configuración de clínica](#configuración-de-clínica-idioma-ui)
+4. [Usuarios y aprobaciones](#usuarios-y-aprobaciones)
+5. [Sedes (Tenants)](#sedes-tenants)
+6. [Chat (admin core)](#chat-admin-core)
+7. [Estadísticas y urgencias (admin core)](#estadísticas-y-urgencias-admin-core)
+8. [CRM: Leads, clientes, vendedores, agenda](#crm-leads-clientes-vendedores-agenda)
+9. [Contexto de lead por teléfono](#contexto-de-lead-por-teléfono)
+10. [Pacientes (referencia legacy)](#pacientes)
+11. [Turnos (Appointments)](#turnos-appointments)
+12. [Profesionales / Vendedores](#profesionales)
+13. [Calendario y bloques](#calendario-y-bloques)
+14. [Tratamientos](#tratamientos-services)
+15. [Webhooks (Meta Ads)](#webhooks-meta-ads)
+16. [Otros (health, chat IA)](#otros)
+
+---
+
+## Autenticación y headers
+
+Todas las rutas bajo **`/admin/core/*`** (y **`/admin/core/crm/*`**) están protegidas por una **triple capa de seguridad**:
+
+1. **Infraestructura (X-Admin-Token)**: El header `X-Admin-Token` debe coincidir con el secreto del servidor. El frontend lo inyecta desde `VITE_ADMIN_TOKEN`.
+2. **Sesión (JWT)**: Se admite vía header `Authorization: Bearer <JWT>` o vía **Cookie HttpOnly** `access_token` (Nexus Security v7.6).
+3. **Capa de Aplicación (RBAC)**: El backend valida que el rol (`ceo`, `professional`, etc.) tenga permisos y resuelve el `tenant_id` automáticamente.
+
+| Header / Cookie | Obligatorio | Descripción |
+|-----------------|-------------|-------------|
+| **`Authorization`** | Sí (o Cookie) | `Bearer <JWT>`. El JWT se obtiene con `POST /auth/login`. |
+| **`Cookie: access_token`** | Sí (o Header) | Cookie HttpOnly emitida por el servidor. Permite persistencia de sesión segura contra XSS. |
+| **`X-Admin-Token`** | Sí | Token estático de infraestructura. Sin este header, el backend responde **401**. |
+
+Rutas **públicas** (sin JWT/X-Admin-Token): `GET /auth/clinics`, `POST /auth/register`, `POST /auth/login`, `GET /health`.
+
+---
+
+## Auth (público y registro)
+
+### Listar clínicas (público)
+`GET /auth/clinics`
+
+**Sin autenticación.** Devuelve el listado de clínicas para el selector de registro.
+
+**Response:**
+```json
+[
+  { "id": 1, "clinic_name": "Clínica Centro" },
+  { "id": 2, "clinic_name": "Sede Norte" }
+]
+```
+
+### Registro
+`POST /auth/register`
+
+Crea usuario con `status = 'pending'`. 
+
+**Nexus Security v7.7.1 (Hardening):** Rate limited a **3 peticiones por minuto por IP** para evitar spam de cuentas.
+
+Para roles `professional` y `secretary` es **obligatorio** enviar `tenant_id`; se crea una fila en `professionals` con `is_active = FALSE` y los datos indicados.
+
+**Payload (campos ampliados):**
+- `email`, `password`, `role` (`professional` | `secretary` | `ceo`)
+- `first_name`, `last_name`
+- **`tenant_id`** (obligatorio si role es professional o secretary)
+- `specialty` (opcional; recomendado para professional)
+- `phone_number` (opcional)
+- `registration_id` / matrícula (opcional)
+
+El backend aplica fallbacks si la tabla `professionals` no tiene columnas `phone_number`, `specialty` o `updated_at` (parches 12d/12e en db.py).
+
+### Login
+`POST /auth/login`
+
+**Payload:** `email`, `password` (form/x-www-form-urlencoded o JSON).
+
+**Nexus Security v7.7 (Hardening):** Rate limited a **5 intentos por minuto por IP**. Si se excede, devuelve **429 Too Many Requests**.
+
+**Response (200):**
+```json
+{
+  "access_token": "<JWT>",
+  "token_type": "bearer",
+  "user": {
+    "id": 1,
+    "email": "user@clinica.com",
+    "role": "ceo",
+    "tenant_id": 1,
+    "allowed_tenant_ids": [1, 2]
+  }
+}
+```
+**Efecto Lateral (Security v7.6):** El servidor emite una cabecera `Set-Cookie` con el `access_token` (HttpOnly, Secure, SameSite=Lax). El frontend **debe** usar `withCredentials: true` en Axios para que el navegador maneje esta cookie automáticamente.
+
+### Logout (Nuevo v7.6)
+`POST /auth/logout`
+
+Limpia la cookie `access_token` en el navegador.
+
+**Response (200):** `{ "status": "logged_out" }`
+
+### Usuario actual (Check de Sesión)
+`GET /auth/me`
+
+Requiere `Authorization: Bearer <JWT>` o presencia de Cookie HttpOnly. Devuelve el usuario autenticado. 
+
+**Nexus Security v7.7:** Esta ruta genera un evento de auditoría automático `verify_session` en la tabla `system_events`. El frontend usa este endpoint al iniciar para verificar si la cookie HttpOnly aún es válida.
+
+### Perfil
+`GET /auth/profile` — Datos de perfil del usuario (incl. profesional si aplica).  
+`PATCH /auth/profile` — Actualizar perfil (campos permitidos según rol).
+
+---
+
+## Configuración de clínica (idioma UI)
+
+### Obtener configuración
+`GET /admin/core/settings/clinic`
+
+Devuelve la configuración de la clínica/entidad del tenant resuelto del usuario (nombre, horarios, **idioma de la UI**). Requiere autenticación admin.
+
+**Response:**
+- `name`: nombre de la clínica (`tenants.clinic_name`)
+- `ui_language`: `"es"` | `"en"` | `"fr"` (por defecto `"en"`). Persistido en `tenants.config.ui_language`.
+- `hours_start`, `hours_end`, `time_zone`, etc.
+
+### Actualizar idioma de la plataforma
+`PATCH /admin/core/settings/clinic`
+
+Actualiza la configuración de la clínica. Solo se envían los campos a modificar.
+
+### Configuración de despliegue (Actualizado Febrero 2026)
+`GET /admin/core/config/deployment`
+
+Devuelve datos de configuración del despliegue (feature flags, URLs, etc.) para el frontend. Requiere autenticación admin.
+
+**Response (Actualizado):**
+```json
+{
+  "webhook_ycloud_url": "https://tu-crm.com/webhook/ycloud",
+  "webhook_meta_url": "https://tu-crm.com/crm/webhook/meta",
+  "orchestrator_url": "https://tu-crm.com",
+  "environment": "production",
+  "company_name": "CRM Ventas"
+}
+```
+
+**Uso en Frontend:**
+- **Webhook Configuration**: URLs copiables en dashboard marketing
+- **Meta Developers**: Configurar webhook URLs en panel Meta
+- **YCloud**: Configurar webhook URL en panel YCloud
+
+**Payload:**
+```json
+{ "ui_language": "en" }
+```
+Valores permitidos: `"es"`, `"en"`, `"fr"`. Se persiste en `tenants.config.ui_language` del tenant resuelto.
+
+---
+
+## Usuarios y aprobaciones
+
+Todas las rutas requieren autenticación admin. Solo **CEO** puede aprobar/rechazar usuarios.
+
+### Usuarios pendientes
+`GET /admin/core/users/pending`
+
+Lista usuarios con `status = 'pending'` (registrados pero no aprobados). Útil para la vista de Aprobaciones.
+
+### Listar usuarios
+`GET /admin/core/users`
+
+Lista usuarios del sistema. Filtrado por tenant según rol (CEO ve todos los suyos; secretaria/profesional solo su tenant).
+
+### Cambiar estado de usuario
+`POST /admin/core/users/{user_id}/status`
+
+Aprueba o rechaza un usuario pendiente.
+
+**Payload:** `{ "status": "approved" }` o `{ "status": "rejected" }`.
+
+**Nexus Security v7.7:** Acción auditada automáticamente bajo el evento `update_user_status`.
+
+---
+
+## Auditoría y Seguridad (Nexus v7.7)
+
+Solo **CEO** puede consultar los logs de auditoría.
+
+### Listar logs de sistema
+`GET /admin/core/audit/logs`
+
+Retorna los eventos grabados por el sistema de auditoría persistente.
+
+**Query params:**
+- `event_type`: (opcional) Filtrar por tipo (ej. `login_failure`, `verify_session`).
+- `severity`: (opcional) `info`, `warning`, `critical`.
+- `limit`, `offset`: Paginación.
+
+**Response:**
+```json
+{
+  "logs": [
+    {
+      "id": "uuid",
+      "event_type": "read_pending_users",
+      "severity": "info",
+      "message": "Auto-audit from get_pending_users",
+      "payload": { "ip": "1.2.3.4", "user_agent": "..." },
+      "occurred_at": "2026-02-25T10:00:00"
+    }
+  ],
+  "total": 150
+}
+```
+
+## Sedes (Tenants)
+
+Solo **CEO** puede gestionar sedes. Requieren autenticación admin.
+
+### Listar sedes
+`GET /admin/core/tenants`
+
+Devuelve todas las clínicas/sedes del CEO.
+
+### Crear sede
+`POST /admin/core/tenants`
+
+**Payload:** Incluye `clinic_name`, `config` (JSON, ej. `calendar_provider`, `ui_language`), etc.
+
+### Actualizar sede
+`PUT /admin/core/tenants/{tenant_id}`
+
+Actualiza nombre y/o configuración de la sede.
+
+### Eliminar sede
+`DELETE /admin/core/tenants/{tenant_id}`
+
+Elimina la sede (restricciones de integridad según esquema).
+
+---
+
+## Tratamientos (Services)
+
+### Listar Tratamientos
+`GET /admin/treatment-types`
+
+Retorna todos los tipos de tratamiento configurados para el tenant. Aislado por `tenant_id`.
+
+**Response:** Lista de objetos con `code`, `name`, `description`, `default_duration_minutes`, `category`, `is_active`, etc.
+
+### Obtener por código
+`GET /admin/treatment-types/{code}`
+
+Devuelve un tipo de tratamiento por su `code`.
+
+### Duración por código
+`GET /admin/treatment-types/{code}/duration`
+
+Devuelve la duración en minutos del tratamiento (para agendar). Response: `{ "duration_minutes": 30 }`.
+
+### Crear Tratamiento
+`POST /admin/treatment-types`
+
+Registra un nuevo servicio clínico.
+
+**Payload:**
+```json
+{
+  "code": "blanqueamiento",
+  "name": "Blanqueamiento Dental",
+  "description": "Tratamiento estético con láser",
+  "default_duration_minutes": 45,
+  "min_duration_minutes": 30,
+  "max_duration_minutes": 60,
+  "complexity_level": "medium",
+  "category": "estetica",
+  "requires_multiple_sessions": false,
+  "session_gap_days": 0
+}
+```
+
+### Actualizar Tratamiento
+`PUT /admin/treatment-types/{code}`
+
+Modifica las propiedades de un tratamiento existente.
+
+**Payload:** (Mismo que POST, todos los campos opcionales)
+
+### Eliminar Tratamiento
+`DELETE /admin/treatment-types/{code}`
+
+- Si no tiene citas asociadas: **Eliminación física**.
+- Si tiene citas asociadas: **Soft Delete** (`is_active = false`).
+
+## Profesionales
+
+### Listar Profesionales
+`GET /admin/professionals`
+
+- **CEO:** devuelve profesionales de **todas** las sedes permitidas (`allowed_ids`).
+- **Secretary/Professional:** solo los de su clínica.
+
+**Response:** Lista de profesionales con `id`, `tenant_id`, `name`, `specialty`, `is_active`, `working_hours`, etc. (incluye `phone_number`, `registration_id` cuando existen en BD).
+
+### Profesionales por usuario
+`GET /admin/professionals/by-user/{user_id}`
+
+Devuelve las filas de `professionals` asociadas a ese `user_id`. Usado por el modal de detalle y Editar Perfil en Aprobaciones (Personal Activo). Incluye `phone_number`, `registration_id`, `working_hours`, `tenant_id`, etc.
+
+### Crear/Actualizar Profesional
+`POST /admin/professionals` | `PUT /admin/professionals/{id}`
+
+Crea o actualiza profesional (tenant_id, nombre, contacto, especialidad, matrícula, working_hours). El backend aplica fallbacks si faltan columnas `phone_number`, `specialty`, `updated_at` en la tabla `professionals`.
+
+### Analíticas por profesional
+`GET /admin/professionals/{id}/analytics`
+
+Devuelve métricas del profesional (turnos, ingresos, etc.) para el dashboard. Requiere autenticación admin; filtrado por tenant.
+
+### Bóveda de Credenciales (Internal)
+`GET /admin/internal/credentials/{name}`
+
+Obtiene credenciales internas. Requiere header **`X-Internal-Token`** (no JWT). Uso interno entre servicios.
+
+---
+
+## Calendario y bloques
+
+### Connect Sovereign (Auth0 / Google Calendar)
+`POST /admin/calendar/connect-sovereign`
+
+Guarda el token de Auth0 cifrado (Fernet) en la tabla `credentials` (category `google_calendar`, por `tenant_id`) y actualiza `tenants.config.calendar_provider` a `'google'` para esa clínica. Requiere `CREDENTIALS_FERNET_KEY` en el entorno.
+
+**Payload:**
+```json
+{
+  "access_token": "<token Auth0>",
+  "tenant_id": 1
+}
+```
+- `tenant_id` opcional; si no se envía se usa la clínica resuelta del usuario (CEO puede indicar clínica).
+
+**Response:** `{ "status": "connected", "tenant_id": 1, "calendar_provider": "google" }`
+
+### Bloques de calendario
+`GET /admin/calendar/blocks` — Lista bloques (no disponibilidad) del tenant. Params: `professional_id`, fechas si aplica.  
+`POST /admin/calendar/blocks` — Crea bloque. Body: `google_event_id`, `title`, `description`, `start_datetime`, `end_datetime`, `all_day`, `professional_id`.  
+`DELETE /admin/calendar/blocks/{block_id}` — Elimina un bloque.
+
+### Sincronización (JIT)
+`POST /admin/calendar/sync` o `POST /admin/sync/calendar`
+
+Fuerza el mirroring entre Google Calendar y la BD local (bloqueos externos → `google_calendar_blocks`). Suele invocarse al cargar la Agenda.
+
+---
+
+## Chat (admin core)
+
+Todas las rutas de chat están bajo **`/admin/core/chat/*`**. Filtran por `tenant_id`; Human Override y ventana 24h se persisten en la tabla **leads** (columnas `human_handoff_requested`, `human_override_until`).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/admin/core/chat/tenants` | Clínicas/entidades disponibles para Chats (CEO: todas; otros: una). Response: `[{ "id", "clinic_name" }]`. |
+| GET | `/admin/core/chat/sessions?tenant_id=<id>` | Sesiones de chat del tenant (leads con mensajes recientes; incluye `status`, `human_override_until`, `unread_count`). |
+| GET | `/admin/core/chat/messages/{phone}?tenant_id=<id>` | Historial de mensajes por teléfono y tenant. |
+| PUT | `/admin/core/chat/sessions/{phone}/read` | Marcar conversación como leída. Query: `tenant_id`. Response: `{ "status": "ok" }`. |
+| POST | `/admin/core/chat/human-intervention` | Activar/desactivar intervención humana (24h de silencio IA). Body: `phone`, `tenant_id`, `activate` (bool), `duration` (minutos opcional). Actualiza `leads.human_handoff_requested` y `leads.human_override_until`. |
+| POST | `/admin/core/chat/remove-silence` | Quitar silencio: vuelve a habilitar respuestas de la IA. Body: `phone`, `tenant_id`. Pone `human_handoff_requested = false`, `human_override_until = null` en el lead. |
+| POST | `/admin/core/chat/send` | Enviar mensaje manual desde el panel. Body: `phone`, `tenant_id`, `message`. |
+
+---
+
+## Estadísticas y urgencias (admin core)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/admin/core/stats/summary` | Resumen de métricas CRM para el Dashboard. Query: `range` (opcional, `weekly` \| `monthly`). Response: `ia_conversations`, `ia_appointments`, `active_urgencies`, `total_revenue`, `growth_data` (array por día). |
+| GET | `/admin/core/chat/urgencies` | Lista de urgencias/leads recientes para el panel. Response: array de `{ lead_name, phone, urgency_level, reason, timestamp }`. |
+
+---
+
+## CRM: Leads, clientes, vendedores, agenda
+
+Todas las rutas CRM están bajo **`/admin/core/crm/*`**. Requieren autenticación admin; filtrado por `tenant_id`.
+
+- **Leads:** `GET/POST /admin/core/crm/leads`, `GET/PUT/DELETE /admin/core/crm/leads/{lead_id}`, `POST /admin/core/crm/leads/{id}/assign`, `PUT /admin/core/crm/leads/{id}/stage`, `POST /admin/core/crm/leads/{id}/convert-to-client`.
+- **Clientes:** `GET/POST /admin/core/crm/clients`, `GET/PUT/DELETE /admin/core/crm/clients/{client_id}`.
+- **Vendedores:** `GET /admin/core/crm/sellers`, `GET /admin/core/crm/sellers/by-user/{user_id}`, `PUT /admin/core/crm/sellers/{id}`, `POST /admin/core/crm/sellers`, `GET /admin/core/crm/sellers/{id}/analytics`.
+- **Agenda:** `GET/POST /admin/core/crm/agenda/events`, `PUT/DELETE /admin/core/crm/agenda/events/{event_id}`.
+- **WhatsApp/Templates/Campaigns:** `GET/POST /admin/core/crm/whatsapp/connections`, `GET /admin/core/crm/templates`, `POST /admin/core/crm/templates/sync`, `GET/POST /admin/core/crm/campaigns`, `POST /admin/core/crm/campaigns/{id}/launch`.
+- **Prospección (Apify):** 
+  - `POST /admin/core/crm/prospecting/scrape`: Inicia scrape de Google Places. Payload: `{ "tenant_id", "niche", "location", "max_places" }`. Por defecto `max_places=30`. El backend utiliza polling asíncrono (timeout 300s).
+  - `GET /admin/core/crm/prospecting/leads`: Lista leads obtenidos por prospección (`source = 'apify_scrape'`). Incluye métricas de `email`, `rating` y `reviews`.
+
+---
+
+
+## Marketing Hub y Meta Ads
+
+Nuevo módulo implementado (Febrero 2026) que integra Meta Ads (Facebook/Instagram) y WhatsApp HSM Automation.
+
+### Prefijos de Marketing
+
+| Prefijo | Contenido |
+|---------|-----------|
+| **`/crm/marketing`** | Dashboard marketing, campañas Meta Ads, HSM Automation, plantillas WhatsApp |
+| **`/crm/auth/meta`** | OAuth Meta/Facebook, gestión tokens, conexión cuentas |
+
+### Endpoints de Marketing Hub (Actualizado Febrero 2026)
+
+#### Dashboard y Métricas
+- `GET /crm/marketing/stats` - Métricas generales (ROI, leads, conversiones)
+- `GET /crm/marketing/stats/roi` - Métricas ROI específicas por campaña
+- `GET /crm/marketing/campaigns` - Lista campañas Meta Ads activas
+- `GET /crm/marketing/campaigns/{campaign_id}/insights` - Métricas específicas campaña
+- `GET /crm/marketing/creatives` - Creativos publicitarios con filtros
+- `GET /crm/marketing/token-status` - Estado tokens OAuth Meta
+
+#### HSM Automation (WhatsApp Business)
+- `GET /crm/marketing/hsm` - Lista plantillas HSM aprobadas
+- `POST /crm/marketing/hsm` - Crear nueva plantilla HSM
+- `PUT /crm/marketing/hsm/{template_id}` - Actualizar plantilla
+- `DELETE /crm/marketing/hsm/{template_id}` - Eliminar plantilla
+
+#### Automatización de Marketing
+- `GET /crm/marketing/automation/rules` - Reglas automatización
+- `POST /crm/marketing/automation/rules` - Crear regla automatización
+- `PUT /crm/marketing/automation/rules/{rule_id}` - Actualizar regla
+- `DELETE /crm/marketing/automation/rules/{rule_id}` - Eliminar regla
+- `GET /crm/marketing/automation-logs` - Logs ejecución automatización
+
+#### Gestión de Cuentas Meta
+- `GET /crm/marketing/meta-portfolios` - Portafolios Meta Ads (Business Managers)
+- `GET /crm/marketing/meta-accounts` - Cuentas publicitarias (Ad Accounts)
+- `GET /crm/marketing/meta-tokens` - Tokens OAuth almacenados
+- `POST /crm/marketing/connect` - Conectar cuenta Meta seleccionada
+- `POST /crm/marketing/disconnect` - Desconectar cuenta Meta
+
+#### Debug y Diagnóstico
+- `GET /crm/marketing/debug/stats` - Debug estadísticas marketing (raw API responses)
+- `GET /crm/marketing/debug/api-calls` - Log llamadas API Meta (si DEBUG_MODE activado)
+
+### Endpoints de OAuth Meta
+
+#### Flujo de Autorización
+- `GET /crm/auth/meta/url` - Generar URL de autorización OAuth
+- `GET /crm/auth/meta/callback` - Callback OAuth (intercambia code por token)
+- `POST /crm/auth/meta/disconnect` - Desconectar cuenta Meta
+- `GET /crm/auth/meta/test-connection` - Probar conexión con Meta API
+
+#### Seguridad
+Todos los endpoints de marketing incluyen:
+- **Rate limiting**: `@limiter.limit("20/minute")`
+- **Audit logging**: `@audit_access("action_name")`
+- **Multi-tenant**: Filtrado automático por `tenant_id`
+- **Token validation**: Verificación JWT + X-Admin-Token
+
+---
+
+## Webhooks (Meta Ads)
+
+Endpoints para recibir notificaciones automáticas de Meta (Facebook/Instagram).
+
+### Verificación de Webhook
+`GET /webhooks/meta`
+
+Usado por Meta para validar el endpoint. Requiere `hub.verify_token` configurado en `META_WEBHOOK_VERIFY_TOKEN`.
+
+### Recepción de Leads (LeadGen)
+`POST /webhooks/meta`
+
+Recibe notificaciones de nuevos leads completando formularios en Meta Ads. 
+1. El backend detecta el `leadgen_id` y `page_id`.
+2. Resuelve el `tenant_id` usando el `page_id` almacenado en `meta_tokens`.
+3. Obtiene detalles (Nombre, Teléfono, Email) vía Graph API.
+4. Realiza un **upsert** en la tabla `leads` con `source = 'meta_lead_form'`.
+5. Emite un evento Socket.IO `META_LEAD_RECEIVED` al panel administrativo.
+
+---
+
+### Ejemplo de Uso
+
+```bash
+# Obtener métricas marketing
+curl -X GET "http://localhost:8000/crm/marketing/stats" \
+  -H "Authorization: Bearer <JWT>" \
+  -H "X-Admin-Token: <ADMIN_TOKEN>"
+
+# Conectar cuenta Meta
+curl -X GET "http://localhost:8000/crm/auth/meta/url" \
+  -H "Authorization: Bearer <JWT>" \
+  -H "X-Admin-Token: <ADMIN_TOKEN>"
+```
+
+### Configuración Requerida
+
+Variables de entorno para Meta OAuth:
+```bash
+META_APP_ID=tu_app_id_facebook
+META_APP_SECRET=tu_app_secret_facebook
+META_REDIRECT_URI=https://tu-crm.com/crm/auth/meta/callback
+```
+
+### Herramientas de Diagnóstico (Nuevo - Febrero 2026)
+
+#### Scripts de Diagnóstico Disponibles:
+
+**1. debug_marketing_stats.py**
+```bash
+# Uso: python debug_marketing_stats.py
+# Propósito: Debugging estadísticas marketing tenant 1
+# Requiere: POSTGRES_DSN configurado en entorno
+```
+
+**2. check_automation.py**
+```bash
+# Uso: python check_automation.py
+# Propósito: Diagnóstico automatización + logs recientes
+# Verifica: Reglas activas, logs últimos 60 minutos, status leads
+```
+
+**3. check_leads.py**
+```bash
+# Uso: python check_leads.py
+# Propósito: Verificación leads base datos
+# Lista: Leads tenant 1 + números chat para cross-reference
+```
+
+#### Variables Entorno Debug:
+- `DEBUG_MARKETING_STATS=true` - Activar debugging estadísticas
+- `LOG_META_API_CALLS=true` - Log detallado llamadas API Meta
+- `ENABLE_AUTOMATION_DIAGNOSTICS=true` - Activar diagnósticos automatización
+- `META_API_DEBUG_MODE=true` - Modo debug API Meta (respuestas raw)
+
+### Documentación Adicional
+- Ver `FINAL_IMPLEMENTATION_SUMMARY.md` para detalles técnicos
+- Ver `ENV_EXAMPLE.md` para configuración completa
+- Ver `SPRINT3_OAUTH_CONFIGURATION.md` para guía paso a paso
+- Ver `URLS_POLITICAS_PRIVACIDAD.md` para URLs páginas legales
+- Ver `08_troubleshooting_history.md` para historial problemas/soluciones
+
+## Enriquecimiento de Leads (Upsert)
+
+Al importar leads desde prospección o mensajes entrantes, el sistema usa una lógica de enriquecimiento no destructiva basada en `ON CONFLICT (tenant_id, phone_number) DO UPDATE SET ... COALESCE(leads.field, EXCLUDED.field)`:
+
+1. **Preservación**: Si un lead ya tiene un nombre (ej. de WhatsApp), se mantiene.
+2. **Enriquecimiento**: Se agregan links sociales (`social_links`), websites, direcciones y scores de Apify que falten.
+3. **Diferenciación de Origen**: Se usa la columna `source` (`whatsapp_inbound` para mensajes, `apify_scrape` para prospección) para filtrar en las pestañas del frontend.
+
+---
+
+## Contexto de lead por teléfono
+
+`GET /admin/core/crm/leads/phone/{phone}/context`
+
+Devuelve el contexto del lead para el panel de Chats (nombre, próximo evento, último evento). Query opcional: `tenant_id_override` (si el usuario puede ver varios tenants).
+
+**Response (200):**
+```json
+{
+  "lead": {
+    "id": "uuid",
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "phone_number": "+54911...",
+    "status": "contacted",
+    "email": "juan@mail.com"
+  },
+  "upcoming_event": {
+    "id": "uuid",
+    "title": "Llamada de seguimiento",
+    "date": "2026-02-20T10:00:00",
+    "end_datetime": "2026-02-20T10:30:00",
+    "status": "scheduled"
+  },
+  "last_event": {
+    "id": "uuid",
+    "title": "Reunión inicial",
+    "date": "2026-02-10T14:00:00",
+    "status": "completed"
+  },
+  "is_guest": false
+}
+```
+
+Si no hay lead para ese teléfono en el tenant: `lead: null`, `upcoming_event: null`, `last_event: null`, `is_guest: true`.
+
+## Pacientes
+
+> [!NOTE]
+> **CRM Ventas:** En este proyecto el contacto principal es el **lead** (tabla `leads`). El contexto para Chats se obtiene con `GET /admin/core/crm/leads/phone/{phone}/context`. Las rutas siguientes (pacientes, turnos con patient_id) se conservan como referencia para integraciones o specs legacy; el frontend actual usa leads, clients y agenda/events bajo `/admin/core/crm`.
+
+Todas las rutas de pacientes están aisladas por `tenant_id`.
+
+### Listar pacientes
+`GET /admin/patients`
+
+**Query params:** `limit`, `offset`, `search` (texto libre). Devuelve lista paginada de pacientes del tenant.
+
+### Alta de Paciente
+`POST /admin/patients`
+
+Crea una ficha médica administrativamente. Incluye triaje inicial. Aislado por `tenant_id`.
+
+**Payload (PatientCreate):**
+```json
+{
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "phone_number": "+5491112345678",
+  "email": "juan@mail.com",
+  "dni": "12345678",
+  "insurance": "OSDE"
+}
+```
+Campos requeridos: `first_name`, `phone_number`. Opcionales: `last_name`, `email`, `dni`, `insurance`.
+
+### Obtener paciente por ID
+`GET /admin/patients/{id}`
+
+Devuelve la ficha del paciente (datos personales, contacto, obra social, etc.).
+
+### Actualizar paciente
+`PUT /admin/patients/{id}`
+
+Actualiza datos del paciente. Body: mismos campos que creación (parcial o completo según implementación).
+
+### Eliminar paciente
+`DELETE /admin/patients/{id}`
+
+Elimina el paciente del tenant (o soft-delete según esquema).
+
+### Historial clínico (records)
+`GET /admin/patients/{id}/records` — Lista notas/registros clínicos del paciente.  
+`POST /admin/patients/{id}/records` — Crea una nota clínica. Body: `content`, opcionalmente `odontogram_data`.
+
+### Búsqueda semántica
+`GET /admin/patients/search-semantic?q=<texto>`
+
+Búsqueda por texto sobre pacientes del tenant (nombre, teléfono, email, etc.).
+
+### Estado de obra social
+`GET /admin/patients/{patient_id}/insurance-status`
+
+Devuelve información de cobertura/obra social del paciente.
+
+### Contexto Clínico del Paciente (legacy)
+`GET /admin/patients/phone/{phone}/context` — En CRM Ventas no se usa; en su lugar usar **`GET /admin/core/crm/leads/phone/{phone}/context`** (ver [Contexto de lead por teléfono](#contexto-de-lead-por-teléfono)).
+
+---
+
+## Turnos (Appointments)
+
+Todas las rutas de turnos están aisladas por `tenant_id`. La disponibilidad y reserva usan **calendario híbrido**: si `tenants.config.calendar_provider == 'google'` se usa Google Calendar; si `'local'`, solo BD local (`appointments` + bloques).
+
+### Listar turnos
+`GET /admin/appointments`
+
+**Query params:** `start_date`, `end_date` (ISO), `professional_id` (opcional). Devuelve turnos del tenant en el rango.
+
+### Verificar colisiones
+`GET /admin/appointments/check-collisions`
+
+Comprueba solapamientos antes de crear/editar. Params: `professional_id`, `start`, `end`, opcional `exclude_appointment_id`.
+
+### Crear turno
+`POST /admin/appointments`
+
+**Payload (AppointmentCreate):**
+```json
+{
+  "patient_id": 1,
+  "patient_phone": null,
+  "professional_id": 2,
+  "appointment_datetime": "2026-02-15T10:00:00",
+  "appointment_type": "checkup",
+  "notes": "Primera visita",
+  "check_collisions": true
+}
+```
+`patient_id` o `patient_phone` (para paciente rápido); `professional_id` y `appointment_datetime` obligatorios. `check_collisions` por defecto `true`.
+
+### Actualizar turno
+`PUT /admin/appointments/{id}`
+
+Actualiza fecha, profesional, tipo, notas, etc. Respeta calendario (Google o local) según tenant.
+
+### Cambiar estado
+`PATCH /admin/appointments/{id}/status` o `PUT /admin/appointments/{id}/status`
+
+Body: `{ "status": "confirmed" }` (o `cancelled`, `completed`, etc., según modelo).
+
+### Eliminar turno
+`DELETE /admin/appointments/{id}`
+
+Borra el turno; si hay evento en Google Calendar, se sincroniza la cancelación.
+
+### Próximos slots
+`GET /admin/appointments/next-slots`
+
+**Query params:** `professional_id`, `date` (opcional), `limit`. Devuelve los siguientes huecos disponibles para agendar (según calendario híbrido).
+
+---
+
+## Analítica y Estadísticas
+
+### Resumen de Estadísticas (admin core)
+Retorna métricas clave del sistema CRM (conversaciones IA, eventos/reuniones, urgencias, ingresos). Usado por el Dashboard. El endpoint `/admin/core/crm/stats/summary` (específico de CRM Sales) devuelve campos adicionales para gráficos.
+
+**Query Params:** `range` (opcional): `weekly` | `monthly`. Default: `weekly`.
+
+**Response (CRM Sales Stats):**
+- `status_distribution`: Array de `{ status, count, color }`.
+- `revenue_leads_trend`: Array de `{ month, revenue, leads }` (últimos 6 meses).
+- `total_leads`, `total_clients`, `active_leads`, `conversion_rate`, `total_revenue`.
+
+### Urgencias Recientes (admin core)
+`GET /admin/core/chat/urgencies`
+
+Lista de urgencias/leads recientes para el panel del Dashboard. Response: array de objetos con `lead_name`, `phone`, `urgency_level`, `reason`, `timestamp`.
+
+### Resumen de profesionales (analytics)
+`GET /admin/core/crm/sellers/{id}/analytics` — Métricas por vendedor (agenda, conversiones). Para listado de vendedores: `GET /admin/core/crm/sellers`.
+
+---
+
+## Otros
+
+### Health
+`GET /health`
+
+**Público.** Respuesta: `{ "status": "ok", "service": "orchestrator" }` (o similar). Usado por orquestadores y monitoreo.
+
+### Chat (IA / WhatsApp)
+`POST /chat`
+
+Endpoint usado por el **WhatsApp Service** (y pruebas) para enviar mensajes al agente LangChain. Persiste historial en BD. No usa JWT ni X-Admin-Token; la seguridad se gestiona en el servicio que llama (webhook con secret, IP, etc.).
+
+**Payload:** Incluye identificador de conversación (ej. `phone`), `message`, y contexto de tenant/clínica según integración.
+
+---
+
+## Parámetros globales (paginación y filtros)
+
+En rutas de listado administrativas suelen soportarse:
+- **`limit`**: Cantidad de registros (default típico: 50).
+- **`offset`**: Desplazamiento para paginación.
+- **`search`**: Filtro por texto libre cuando aplique.
+
+**Nexus Security v7.7.1:** Endpoints de alta carga como `/leads`, `/clients` y `/patients` tienen un **Rate Limit de 100/min** para prevenir el raspado masivo de datos (PII). Todas estas rutas están protegidas con el decorador `@audit_access`.
+
+---
+
+## Códigos de error habituales
+
+| Código | Significado |
+|--------|-------------|
+| **401** | No autenticado o token inválido. En `/admin/*` suele indicar JWT faltante/inválido o **falta de header `X-Admin-Token`**. |
+| **403** | Sin permiso para el recurso (ej. tenant no permitido para el usuario). |
+| **404** | Recurso no encontrado (paciente, turno, sede, etc.). |
+| **422** | Error de validación (body o query params incorrectos). |
+| **500** | Error interno del servidor. |
+
+---
+
+## CRM Sales — Leads y Prospección
+
+> [!NOTE]
+> Todos los endpoints bajo `/admin/core/crm/*` requieren `Authorization: Bearer <JWT>` + `X-Admin-Token`.
+
+### Listar Leads (Generic — todas las fuentes)
+Retorna todos los leads del tenant autenticado (extraído del JWT). **No filtra por `source`** — incluye WhatsApp inbound, Apify scrape y leads manuales. El frontend aplica un guardia de 404 si el lead no existe o ha sido borrado.
+
+**Response:** `List[LeadResponse]` — incluye `id`, `tenant_id`, `phone_number`, `first_name`, `last_name`, `email`, `status`, `source`, `apify_title`, `social_links`, `outreach_message_sent`, `created_at`, `updated_at`.
+
+#### Atribución Meta Ads (Nuevos campos)
+- `lead_source`: `ORGANIC`, `META_ADS`, `META_LEAD_FORM`.
+- `meta_ad_id`: ID del anuncio de procedencia.
+- `meta_campaign_id`: ID de la campaña.
+- `meta_ad_headline`: Titular del anuncio.
+- `meta_ad_body`: Texto del anuncio o nota del formulario.
+ - `external_ids`: JSONB con IDs externos (ej. leadgen_id).
+
+> [!IMPORTANT]
+> **Límite actualizado 2026-02-24**: El límite fue aumentado de `le=100` a `le=500` para soportar la vista de Leads del frontend (que carga hasta 500 registros en una sola llamada).
+
+---
+
+### Listar Leads de Prospección (Apify Only)
+`GET /admin/core/crm/prospecting/leads`
+
+Retorna **solo leads con `source = 'apify_scrape'`**. Requiere `tenant_id_override` explícito (diseñado para admins multi-tenant). Usado por la vista de **Prospección**.
+
+**Query params obligatorios:**
+
+| Parámetro | Tipo | Descripción |
+|-----------|------|-------------|
+| `tenant_id_override` | int | **Requerido.** ID del tenant a consultar |
+| `only_pending` | bool | Si `true`, solo leads con `outreach_message_sent = false` |
+| `limit` | int | Default 200, máximo 500 |
+| `offset` | int | Paginación |
+
+> [!WARNING]
+> Si `tenant_id_override` no se envía, el backend responde **422**. Este endpoint **no** agrupa leads de WhatsApp.
+
+---
+
+### Crear Lead
+`POST /admin/core/crm/leads`
+
+**Payload:**
+```json
+{
+  "phone_number": "+5491155554444",
+  "first_name": "Juan",
+  "last_name": "García",
+  "email": "juan@ejemplo.com",
+  "status": "new"
+}
+```
+
+### Actualizar Lead
+`PUT /admin/core/crm/leads/{id}`
+
+### Convertir Lead → Cliente
+`POST /admin/core/crm/leads/{id}/convert-to-client`
+
+### Resumen de fuentes de leads (`source`)
+
+| Valor | Origen |
+|-------|--------|
+| `whatsapp_inbound` | Contacto inició conversación por WhatsApp |
+| `apify_scrape` | Scraping de Google Maps via Apify |
+| `meta_lead_form` | Formulario de Meta Ads (Hub de Marketing) |
+| `manual` | Creado manualmente desde la UI |
