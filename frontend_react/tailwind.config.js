@@ -58,6 +58,15 @@ export default {
           DEFAULT: '#0059b3',
           dark: '#004d99',
         },
+        // Sovereign Dark Glass Palette
+        dark: {
+          base: '#050505',
+          surface: 'rgba(255, 255, 255, 0.02)',
+          border: 'rgba(255, 255, 255, 0.1)',
+        },
+        accent: {
+          neon: '#2563EB',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

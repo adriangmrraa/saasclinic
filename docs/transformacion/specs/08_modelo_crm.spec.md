@@ -1,7 +1,7 @@
-# Specification: CRM Data Model Design
+# Specification: SAAS CRM Data Model Design
 
 ## 1. Context and Goals
-- **Goal**: Design the Data Model and API for the "CRM Sales" niche.
+- **Goal**: Design the Data Model and API for the **SAAS CRM** module.
 - **Source**: `docs/TRANSFORMACION_AGNOSTICA_NICHO.md` (Prompt 8).
 - **Output**: `docs/transformacion/08_modelo_crm_ventas.md`.
 

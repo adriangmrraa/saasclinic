@@ -1,6 +1,6 @@
-# Arquitectura del Sistema - CRM Ventas (Actualizado Sprint 2)
+# Arquitectura del Sistema - SAAS CRM (Evolución SaaS)
 
-Este documento describe la estructura técnica, el flujo de datos y la interacción entre los componentes de la plataforma CRM Ventas, incluyendo las nuevas funcionalidades del **Sprint 2 - Tracking Avanzado**.
+Este documento describe la estructura técnica, el flujo de datos y la interacción entre los componentes de la plataforma SAAS CRM, basada en el núcleo Nexus Core.
 
 ## 1. Diagrama de Bloques (Conceptual)
 
@@ -41,7 +41,7 @@ Dashboard CEO / ChatsView / Métricas
    - Background jobs monitoring
 ```
 
-## 2. Estructura de Microservicios (CRM Ventas)
+## 2. Estructura de Microservicios (SAAS CRM)
 
 ### A. WhatsApp Service (Puerto 8002)
 
@@ -86,11 +86,18 @@ Dashboard CEO / ChatsView / Métricas
 3. **`/scheduled-tasks/*`**: Gestión de background jobs
 4. **`/health/*`**: Health checks y monitoring
 
-### C. Frontend React (Puerto 5173)
+## 3. Frontend & Aesthetic System
 
 **Tecnología:** React 18 + TypeScript + Vite + Socket.IO Client
 
-**Función:** Centro de Operaciones CRM con interface moderna y real-time updates.
+**Design System:** **Sovereign Dark Glass** (SDG).
+Este sistema utiliza:
+- Fondos oscuros profundos (`#0a0a0b`).
+- Efectos de Glassmorphism (transparencias sutiles, `backdrop-blur`).
+- Bordes finos y gradientes elegantes.
+- Tipografía moderna (Inter/Outfit).
+
+**Función:** Centro de Operaciones SAAS CRM con interface moderna y real-time updates.
 
 **Componentes Nuevos (Sprint 2):**
 
@@ -342,7 +349,7 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_DB: crmventas
+      POSTGRES_DB: saascrm
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     volumes:

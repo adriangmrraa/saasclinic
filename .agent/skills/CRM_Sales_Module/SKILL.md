@@ -1,13 +1,13 @@
 ---
-name: "CRM Sales Module"
-description: "Módulo CRM: leads, pipeline, vendedores, agenda híbrida y tools de reserva para CRM VENTAS."
+name: "SAAS CRM Module"
+description: "Módulo CRM: leads, pipeline, vendedores, agenda híbrida y tools de reserva para SAAS CRM."
 trigger: "leads, pipeline, deals, sellers, agenda, calendar, crm_sales"
 scope: "DOMAIN"
 ---
 
-# CRM Sales Module – CRM VENTAS
+# SAAS CRM Module – SAAS CRM
 
-Módulo de ventas (leads, pipeline, vendedores, agenda) dentro de **CRM VENTAS**. Referencia: modules/crm_sales, niches/crm_sales, gcal_service. Proyecto single-niche: solo CRM (no dental).
+Módulo de ventas (leads, pipeline, vendedores, agenda) dentro de **SAAS CRM**. Referencia: modules/crm_sales, niches/crm_sales, gcal_service. Proyecto single-niche: solo CRM (no dental).
 
 ---
 
@@ -39,6 +39,6 @@ Registrar en el provider del nicho `crm_sales` las tools que el agente pueda usa
 ## Frontend
 
 Vistas: Leads (lista con pestañas Mensajes/Prospección), Lead detail (con guardia 404), Pipeline, Sellers, Agenda (calendario con Socket.IO para eventos en tiempo real), **Prospecting (scraping tool)**, **Dashboard (con métricas reales de conversión y tendencias)**.
-Sidebar con ítems para nicho crm_sales. Referencia: **CRM VENTAS/frontend_react/src/modules/crm_sales/**.
+Sidebar con ítems para nicho crm_sales. Referencia: **SAAS CRM/frontend_react/src/modules/crm_sales/**.
 
-Todo el código en **CRM VENTAS**.
+Todo el código en **SAAS CRM**.

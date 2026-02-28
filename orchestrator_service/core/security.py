@@ -299,9 +299,24 @@ async def log_pii_access(
     )
 
 
-async def get_current_user_context(user_data=Depends(verify_admin_token)) -> dict:
-    """Retorna el contexto del usuario actual para usar en dependencias de FastAPI."""
+async def get_current_user_context(request: Request, user_data=Depends(verify_admin_token)) -> dict:
+    """Retorna el contexto del usuario actual para usar en dependencias de FastAPI.
+    Valida además el estado del Trial de la entidad asociada."""
     tenant_id = await get_resolved_tenant_id(user_data)
+    
+    tenant_info = await db.pool.fetchrow("SELECT subscription_status, trial_ends_at FROM tenants WHERE id = $1", tenant_id)
+    sub_status = tenant_info["subscription_status"] if tenant_info else "active"
+    trial_ends = tenant_info["trial_ends_at"] if tenant_info else None
+    
+    from datetime import datetime, timezone
+    
+    # Validar que si el trial expiró y no es una ruta de auth (/me, /logout), lance 402
+    is_auth_route = request.url.path.startswith("/auth/me") or request.url.path.startswith("/api/v1/auth/me")
+    
+    if sub_status == 'expired' or (sub_status == 'trial' and trial_ends and datetime.now(timezone.utc) > trial_ends):
+        if not is_auth_route:
+            raise HTTPException(status_code=402, detail="Tu suscripción o prueba gratuita ha finalizado.")
+
     user_id = user_data.user_id
     email = user_data.email
     role = user_data.role
@@ -310,8 +325,24 @@ async def get_current_user_context(user_data=Depends(verify_admin_token)) -> dic
         "id": user_id,  # Alias for compatibility
         "email": email,
         "role": role,
-        "tenant_id": tenant_id
+        "tenant_id": tenant_id,
+        "subscription_status": sub_status,
+        "trial_ends_at": trial_ends.isoformat() if trial_ends else None
     }
 
 # Alias for legacy routes compatibility
 get_current_user = get_current_user_context
+
+async def get_tenant_id_from_token(user_data: dict = Depends(get_current_user_context)) -> int:
+    """
+    Dependencia de seguridad extrema (Data Isolation).
+    Asegura que el tenant_id venga EXCLUSIVAMENTE del token JWT o de la validación interna.
+    NUNCA debe leerse del body o query params.
+    """
+    tenant_id = user_data.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Error de Seguridad: Tenant ID no resuelto en el contexto del usuario."
+        )
+    return tenant_id

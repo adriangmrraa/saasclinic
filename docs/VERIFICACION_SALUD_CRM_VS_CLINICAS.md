@@ -1,6 +1,6 @@
-# Verificación de salud: CRM VENTAS vs CLINICASV1.0
+# Verificación de salud: SAAS CRM vs CLINICASV1.0
 
-**Objetivo:** Garantizar que CRM VENTAS tenga la misma lógica y nivel de completitud que Clínicas B1.0 (CLINICASV1.0), adaptado al dominio CRM (entidades, vendedores, clientes, leads). Este documento registra el estado actual y **lo que falta** para que CRM funcione de forma óptima y paritaria.
+**Objetivo:** Garantizar que SAAS CRM tenga la misma lógica y nivel de completitud que Clínicas B1.0 (CLINICASV1.0), adaptado al dominio CRM (entidades, vendedores, clientes, leads). Este documento registra el estado actual y **lo que falta** para que CRM funcione de forma óptima y paritaria.
 
 **Fecha:** 2026-02-16  
 **Alcance:** Backend (orchestrator_service), Frontend (frontend_react), Base de datos.
@@ -173,7 +173,7 @@ Tras la implementación del plan de paridad:
 2. La tabla **leads** tiene las columnas de human override (Parche 25) y **ChatService** expone status y human_override_until en las sesiones.
 3. **ChatsView** usa el endpoint de contexto de lead y el tipo LeadContext (lead, upcoming_event, last_event).
 
-CRM VENTAS queda alineado en lógica y capacidades con Clínicas B1.0 en los flujos equivalentes, adaptado al dominio CRM (entidades, vendedores, clientes, leads).
+SAAS CRM queda alineado en lógica y capacidades con Clínicas B1.0 en los flujos equivalentes, adaptado al dominio CRM (entidades, vendedores, clientes, leads).
 
 ---
 

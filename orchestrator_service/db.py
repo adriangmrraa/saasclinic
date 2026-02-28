@@ -568,6 +568,24 @@ class Database:
                     ALTER TABLE tenants ADD COLUMN acquisition_source VARCHAR(100);
                 END IF;  
             END $$;
+            """,
+            # Parche 16: Tabla de Historial de Acciones IA (Persistence Protocol)
+            """
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_actions') THEN
+                    CREATE TABLE ai_actions (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+                        lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+                        type TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        summary TEXT NOT NULL,
+                        metadata JSONB DEFAULT '{}',
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                    CREATE INDEX idx_ai_actions_lead_tenant ON ai_actions(lead_id, tenant_id, created_at DESC);
+                END IF;
+            END $$;
             """
         ]
 

@@ -1,4 +1,4 @@
-# 🦷 CRM Ventas – Nexus Core CRM
+# 🚀 SAAS CRM – Nexus Core CRM
 
 **Sovereign Multi-Tenant CRM Platform with AI-Driven Sales Automation.** Transform your sales pipeline with intelligent lead management, WhatsApp-first communication, and real-time analytics.
 
@@ -23,7 +23,7 @@
 
 ## 🌟 Vision & Value Proposition
 
-**CRM Ventas** is a sovereign, multi-tenant CRM platform for sales organizations. Single product focus: leads, pipeline, vendedores, agenda, and WhatsApp-powered conversations. Enterprise-grade architecture with strict tenant isolation.
+**SAAS CRM** is a sovereign, multi-tenant CRM platform for sales organizations. Single product focus: leads, pipeline, vendedores, agenda, and WhatsApp-powered conversations. Enterprise-grade architecture with strict tenant isolation.
 
 ### 🎯 For Whom
 
@@ -320,7 +320,7 @@ Business logic is encapsulated in modules that can be activated per tenant:
 | **dental** | Dental clinic module: patients, clinical records, treatments, dental appointments |
 | **crm_sales** | Sales CRM module: leads, deals, pipeline, campaigns, Meta ads integration |
 
-### Data Model: CRM Ventas
+### Data Model: SAAS CRM
 
 ```sql
 -- Leads (replaces patients)
@@ -476,4 +476,4 @@ Development follows the project's SDD workflows (specify → plan → implement)
 
 ## 📜 License
 
-Nexus Core CRM – CRM Ventas © 2026.
+Nexus Core CRM – SAAS CRM © 2026.

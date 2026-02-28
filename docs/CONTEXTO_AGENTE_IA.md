@@ -1,19 +1,19 @@
-# Contexto completo del proyecto para agentes IA
+# Contexto completo del proyecto para agentes IA (SAAS CRM)
 
-**Propósito:** Este documento permite que otra IA (en otra conversación) tome contexto completo del proyecto **CRM Ventas**: qué es, cómo está construido, cómo trabajar en él y dónde está cada cosa. Úsalo como punto de entrada único antes de tocar código.
+**Propósito:** Este documento permite que otra IA (en otra conversación) tome contexto completo del proyecto **SAAS CRM**: qué es, cómo está construido, cómo trabajar en él y dónde está cada cosa. Úsalo como punto de entrada único antes de tocar código.
 
 **Para comenzar una nueva conversación con una IA de código (ej. Cursor):** Usá el **prompt listo para copiar/pegar** en [docs/PROMPT_CONTEXTO_IA_COMPLETO.md](PROMPT_CONTEXTO_IA_COMPLETO.md). Copiá el bloque de ese archivo y pegarlo como **primer mensaje** del chat nuevo; así la IA carga reglas, workflows y checklist desde el inicio.
 
-**Última actualización:** 2026-02 (documentación CRM Ventas single-niche, prefijos /admin/core, contexto lead, paridad con Clínicas)
+**Última actualización:** 2026-02 (documentación SAAS CRM, evolución multi-tenant, estética SDG, contexto lead)
 
 ---
 
 - **Marketing Hub & Meta Ads** (Nuevo - Feb 2026): Dashboard marketing, campañas Meta Ads (Facebook/Instagram), HSM Automation WhatsApp, OAuth Meta integration, ROI tracking, plantillas aprobadas, herramientas debug, páginas legales para Meta OAuth.
 ## 1. Qué es el proyecto
 
-- **Nombre:** CRM Ventas (Nexus Core).
-- **Tipo:** Plataforma **multi-tenant** de CRM de ventas (leads, pipeline, vendedores, agenda, chats) con asistente IA por WhatsApp para calificación de leads, reserva de reuniones y derivación a humano. **Un solo nicho:** solo CRM de ventas (no dental, no multi-nicho).
-- **Usuarios:** Entidades/sedes (tenants), CEOs, secretarias, vendedores (setters/closers). Los leads interactúan por WhatsApp con el agente.
+- **Nombre:** SAAS CRM (Nexus Core).
+- **Tipo:** Plataforma **multi-tenant** de CRM de ventas y prospección (leads, pipeline, vendedores, agenda, chats) con asistente IA por WhatsApp para calificación, agendamiento y derivación.
+- **Usuarios:** Entidades/sedes (tenants), CEOs, managers, vendedores (setters/closers).
 - **Pilares:** Backend (Orchestrator FastAPI + LangChain), Frontend (React + Vite + Tailwind), WhatsApp Service (YCloud + Whisper), PostgreSQL, Redis.
 
 ---
@@ -42,8 +42,8 @@ orchestrator_service/
   auth_routes.py       # /auth/login, /auth/register, /auth/me, /auth/clinics, /auth/profile
   db.py                # Pool PostgreSQL + Maintenance Robot (parches idempotentes en arranque)
   gcal_service.py      # Google Calendar (disponibilidad, eventos, bloques)
-  analytics_service.py # Métricas por vendedor (CEO)
-  modules/crm_sales/   # Módulo CRM: routes.py → /admin/core/crm (leads, clients, sellers, agenda/events, leads/phone/context)
+  analytics_service.py # Métricas del negocio (CEO)
+  modules/crm_sales/   # Módulo CRM: routes.py → /admin/core/crm (leads, clients, sellers, agenda/events)
 
 frontend_react/src/
   App.tsx              # Rutas; LanguageProvider y AuthProvider envuelven todo
@@ -62,11 +62,11 @@ frontend_react/src/
 ## 4. Reglas obligatorias (resumen de AGENTS.md)
 
 - **Backend – Soberanía:** Todas las consultas (SELECT/INSERT/UPDATE/DELETE) deben filtrar por `tenant_id`. El aislamiento por sede es inviolable.
-- **Backend – Auth:** Rutas admin usan `verify_admin_token` (valida JWT + X-Admin-Token + rol). No usar `get_current_user` solo en rutas que requieran rol CEO.
-- **Frontend – Rutas:** Rutas con hijos deben usar `path="/*"`. `/profesionales` redirige a `/aprobaciones`; la gestión de profesionales es desde Personal Activo (UserApprovalView).
+- **Backend – Auth:** Rutas admin usan `verify_admin_token` (valida JWT + X-Admin-Token + rol).
+- **Frontend – Rutas:** Rutas con hijos deben usar `path="/*"`.
 - **Frontend – Scroll:** Aislamiento de scroll: contenedor global `h-screen overflow-hidden`; vistas con `flex-1 min-h-0 overflow-y-auto` para no romper layout.
 - **Frontend – i18n:** Cualquier texto visible debe usar `useTranslation()` y `t('namespace.key')`. Añadir claves en `es.json`, `en.json` y `fr.json`.
-- **Base de datos:** No ejecutar SQL manual contra producción. Cambios de esquema: añadir parches idempotentes en `db.py` (bloques `DO $$ ... END $$`) y, si aplica, actualizar `db/init/dentalogic_schema.sql` para instalaciones nuevas.
+- **Base de datos:** No ejecutar SQL manual contra producción. Cambios de esquema: añadir parches idempotentes en `db.py` (bloques `DO $$ ... END $$`) y, si aplica, actualizar `db/init/saas_crm_schema.sql` para instalaciones nuevas.
 
 ---
 
@@ -86,9 +86,9 @@ frontend_react/src/
 - **Admin – CRM:** Leads, clients, sellers, agenda/events, contexto lead: `GET /admin/core/crm/leads/phone/{phone}/context`. Todo bajo `GET/POST/PUT/DELETE /admin/core/crm/*`. Ver `docs/API_REFERENCE.md`.
 - **Chat IA:** `POST /chat` (mensaje entrante; contexto por tenant; tools con filtro por tenant).
 
-**Tools del agente (nombres exactos):** `check_availability`, `book_appointment`, `triage_urgency`, `derivhumano`, `cancel_appointment`, `reschedule_appointment`, `list_services`. Todos reciben/respetan `tenant_id`.
+**Tools del agente (nombres exactos):** `check_availability`, `book_event`, `derivhumano`, `list_products`, `list_sellers`, `convert_to_client`.
 
-**Flujo del agente (datos que necesita):** Saludo mencionando la clínica → definir **siempre un servicio** (máx. 3 si se listan) → usar duración del servicio para disponibilidad y agendar → **consultar disponibilidad** (local o Google según sede) y **elegir profesional** (preguntar preferencia o "cualquiera disponible") → con servicio, profesional (opcional), día/hora y datos del paciente, ejecutar `book_appointment`. Detalle en `README.md` (sección "Flujo del agente de IA") y `docs/04_agent_logic_and_persona.md` (sección 3.1).
+**Flujo del agente (datos que necesita):** Saludo mencionando el negocio → definir el producto/servicio → usar duración para disponibilidad → **consultar disponibilidad** y agendar → con producto, vendedor, día/hora y datos del lead, ejecutar `book_event`.
 
 ---
 
@@ -149,10 +149,10 @@ frontend_react/src/
 | `/leads`, `/leads/:id` | LeadsView, LeadDetail | Listado y ficha de leads; pipeline |
 | `/clientes`, `/clientes/:id` | ClientsView, ClientDetail | Listado y ficha de clientes (convertidos desde leads) |
 | `/chats` | ChatsView | Por tenant_id; contexto lead (GET leads/phone/context); human intervention, remove-silence, send manual |
-| `/vendedores` | SellersView / UserApprovalView | Personal/vendedores; aprobaciones CEO |
-| `/analytics/professionals` | ProfessionalAnalyticsView | Solo CEO; métricas por vendedor |
+| `/vendedores` | SellersView | Personal/vendedores; gestionados por CEO |
+| `/analytics/sellers` | SellerAnalyticsView | Solo CEO; métricas por vendedor |
 | `/perfil` | ProfileView | Perfil usuario |
-| `/aprobaciones` | UserApprovalView | Pendientes + Personal Activo; Vincular a sede, Editar Perfil |
+| `/aprobaciones` | UserApprovalView | Pendientes + Vendedores Activos |
 | `/sedes` | ClinicsView | CRUD tenants/entidades (solo CEO) |
 | `/configuracion` | ConfigView | Selector idioma (es/en/fr); GET/PATCH /admin/core/settings/clinic |
 
@@ -162,9 +162,9 @@ Todas las vistas anteriores usan `useTranslation()` y `t()` para respetar el sel
 
 ## 8. Base de datos (PostgreSQL)
 
-- **Esquema base:** `db/init/` y parches en `orchestrator_service/db.py` (tenants, users, professionals, leads, clients, seller_agenda_events, chat_messages, credentials, etc.).
-- **Evolución:** Maintenance Robot en `db.py` aplica parches idempotentes en cada arranque (p. ej. Parche 25: `human_handoff_requested`, `human_override_until` en `leads`). Siempre `DO $$ ... IF NOT EXISTS ... END $$`.
-- **Multi-tenant:** Tablas con `tenant_id`: tenants, professionals, leads, clients, seller_agenda_events, chat_messages, etc. Toda consulta debe filtrar por `tenant_id` del usuario/sesión.
+- **Esquema base:** `db/init/saas_crm_schema.sql` y parches en `orchestrator_service/db.py` (tenants, users, sellers, leads, clients, seller_agenda_events, chat_messages, credentials, etc.).
+- **Evolución:** Maintenance Robot en `db.py` aplica parches idempotentes en cada arranque.
+- **Multi-tenant:** Tablas con `tenant_id`. Toda consulta debe filtrar por `tenant_id` del usuario/sesión.
 - **Config por sede:** `tenants.config` (JSONB): `ui_language`, `calendar_provider` ('local' | 'google'), etc.
 
 ---
@@ -175,7 +175,7 @@ Todas las vistas anteriores usan `useTranslation()` y `t()` para respetar el sel
 - **Dónde se elige:** Configuración (`/configuracion`) – solo CEO. Se persiste en `tenants.config.ui_language` vía PATCH `/admin/settings/clinic`.
 - **Frontend:** `LanguageProvider` envuelve la app. Al cargar con sesión se obtiene idioma de GET `/admin/settings/clinic`; también se usa `localStorage` (`ui_language`). Componentes usan `useTranslation()` y `t('namespace.key')`. Archivos: `frontend_react/src/locales/es.json`, `en.json`, `fr.json`.
 - **Añadir un texto traducido:** 1) Añadir clave en los tres JSON (ej. `"my_section.my_key": "Texto"`). 2) En el componente: `const { t } = useTranslation();` y usar `t('my_section.my_key')`.
-- **Agente WhatsApp:** Responde en el idioma del mensaje del paciente (detección es/en/fr en backend); no depende del idioma de la UI.
+- **Agente WhatsApp:** Responde en el idioma del mensaje del cliente (detección es/en/fr en backend); no depende del idioma de la UI.
 
 ---
 

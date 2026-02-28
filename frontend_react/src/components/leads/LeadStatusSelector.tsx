@@ -90,64 +90,71 @@ export const LeadStatusSelector: React.FC<LeadStatusSelectorProps> = ({
             {/* Menú Flotante */}
             {isOpen && (
                 <div
-                    className="absolute z-[9999] mt-2 w-56 rounded-md shadow-2xl bg-white border border-gray-100 ring-1 ring-black ring-opacity-5 origin-top-right right-0 shadow-lg transform opacity-100 scale-100 transition-all"
+                    className="absolute z-[9999] mt-2 w-64 rounded-2xl shadow-2xl bg-[#151515] border border-white/10 ring-1 ring-white/5 origin-top-right right-0 transform opacity-100 scale-100 transition-all backdrop-blur-xl"
                 >
                     {commentRequired ? (
-                        <div className="p-3">
-                            <p className="text-xs font-semibold text-gray-600 mb-2">{t('leads.status_selector.comment_required')}</p>
+                        <div className="p-4">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 pl-1">{t('leads.status_selector.comment_required')}</p>
                             <textarea
-                                className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 p-2 shadow-sm mb-2 resize-none"
-                                rows={2}
+                                className="w-full text-sm bg-[#0d0d0d] border border-gray-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 p-3 shadow-inner mb-4 resize-none placeholder-gray-700"
+                                rows={3}
                                 value={commentValue}
                                 onChange={(e) => setCommentValue(e.target.value)}
                                 placeholder={t('leads.status_selector.reason_placeholder')}
                             />
-                            <div className="flex justify-end gap-2">
-                                <button onClick={() => setCommentRequired(false)} className="text-xs text-gray-500 px-2 py-1 rounded hover:bg-gray-100">{t('common.cancel')}</button>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setCommentRequired(false)}
+                                    className="text-xs font-bold text-gray-500 px-4 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                >
+                                    {t('common.cancel')}
+                                </button>
                                 <button
                                     disabled={!commentValue.trim() || isUpdating}
                                     onClick={() => pendingStatusCode && submitStatusChange(pendingStatusCode)}
-                                    className="text-xs text-white bg-blue-600 px-3 py-1 rounded shadow-sm hover:bg-blue-700 disabled:opacity-50"
+                                    className="text-xs font-bold text-white bg-blue-600 px-5 py-2 rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-50 transition-all active:scale-95"
                                 >
                                     {t('common.confirm') || 'Confirmar'}
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="py-1 max-h-60 overflow-y-auto custom-scrollbar" role="menu">
-                            <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        <div className="py-2 max-h-80 overflow-y-auto custom-scrollbar" role="menu">
+                            <div className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] border-b border-white/5 mb-2">
                                 {t('leads.status_selector.change_status')}
                             </div>
 
                             {isLoadingTransitions ? (
-                                <div className="px-4 py-3 flex items-center justify-center text-gray-400 text-sm">
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('leads.status_selector.evaluating_workflow')}
+                                <div className="px-4 py-6 flex flex-col items-center justify-center text-gray-500 text-xs gap-3">
+                                    <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                                    <span className="animate-pulse">{t('leads.status_selector.evaluating_workflow')}</span>
                                 </div>
                             ) : transitions && transitions.length > 0 ? (
-                                transitions.map((transition: LeadStatusTransition) => (
-                                    <button
-                                        key={transition.id}
-                                        onClick={(e) => { e.stopPropagation(); handleStatusSelect(transition.to_status_code); }}
-                                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 group"
-                                        role="menuitem"
-                                    >
-                                        <div className="flex flex-col w-full">
-                                            <div className="flex items-center">
-                                                {/* Optional tiny icon preview left of the status text */}
-                                                <span
-                                                    className="w-2 h-2 rounded-full mr-2"
-                                                    style={{ backgroundColor: transition.to_status_color }}
-                                                />
-                                                <span className="font-medium">{transition.to_status_name}</span>
+                                <div className="space-y-1 px-2">
+                                    {transitions.map((transition: LeadStatusTransition) => (
+                                        <button
+                                            key={transition.id}
+                                            onClick={(e) => { e.stopPropagation(); handleStatusSelect(transition.to_status_code); }}
+                                            className="w-full text-left flex items-center px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white rounded-xl group transition-all"
+                                            role="menuitem"
+                                        >
+                                            <div className="flex flex-col w-full">
+                                                <div className="flex items-center">
+                                                    <div
+                                                        className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_8px_rgba(0,0,0,0.5)]"
+                                                        style={{ backgroundColor: transition.to_status_color, boxShadow: `0 0 10px ${transition.to_status_color}40` }}
+                                                    />
+                                                    <span className="font-bold tracking-tight">{transition.to_status_name}</span>
+                                                </div>
+                                                <span className="text-[10px] text-gray-500 ml-5.5 mt-0.5 font-medium group-hover:text-blue-400 transition-colors opacity-70">
+                                                    {transition.label}
+                                                </span>
                                             </div>
-                                            <span className="text-xs text-gray-400 ml-4 group-hover:text-blue-500 transition-colors">
-                                                {transition.label}
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))
+                                        </button>
+                                    ))}
+                                </div>
                             ) : (
-                                <div className="px-4 py-3 text-sm text-gray-500 italic">
+                                <div className="px-4 py-6 text-center text-xs text-gray-500 italic">
                                     {t('leads.status_selector.no_valid_transitions')}
                                 </div>
                             )}

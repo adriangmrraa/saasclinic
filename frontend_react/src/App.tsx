@@ -1,5 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { SaaSLayout } from './components/SaaSLayout';
+import SaaSLandingView from './views/landing/SaaSLandingView';
+import WizardRegistrationView from './views/onboarding/WizardRegistrationView';
+import PaywallView from './views/onboarding/PaywallView';
 import CrmDashboardView from './views/CrmDashboardView';
 import ChatsView from './views/ChatsView';
 import LoginView from './views/LoginView';
@@ -51,12 +55,26 @@ function App() {
                 <Route path="/privacy" element={<PrivacyTermsView />} />
                 <Route path="/terms" element={<PrivacyTermsView />} />
 
-                <Route path="/*" element={
+                {/* --- SaaS Public Routes --- */}
+                <Route path="/" element={
+                  <SaaSLayout>
+                    <SaaSLandingView />
+                  </SaaSLayout>
+                } />
+                <Route path="/registro" element={
+                  <SaaSLayout>
+                    <WizardRegistrationView />
+                  </SaaSLayout>
+                } />
+
+                {/* --- CRM Protected Routes --- */}
+                <Route path="/crm/*" element={
                   <ProtectedRoute>
                     <Layout>
                       <Routes>
+                        {/* Define explicitly the /crm base relative to /crm/* */}
                         <Route index element={<CrmDashboardView />} />
-                        <Route path="agenda" element={<Navigate to="/crm/agenda" replace />} />
+                        <Route path="agenda" element={<CrmAgendaView />} />
                         <Route path="pacientes" element={<Navigate to="/crm/clientes" replace />} />
                         <Route path="pacientes/:id" element={<Navigate to="/crm/clientes" replace />} />
                         <Route path="chats" element={<ChatsView />} />
@@ -75,44 +93,46 @@ function App() {
                             <ConfigView />
                           </ProtectedRoute>
                         } />
-                        <Route path="crm/agenda" element={<CrmAgendaView />} />
-                        <Route path="crm/leads" element={<LeadsView />} />
-                        <Route path="crm/leads/:id" element={<LeadDetailView />} />
-                        <Route path="crm/meta-leads" element={
+                        <Route path="leads" element={<LeadsView />} />
+                        <Route path="leads/:id" element={<LeadDetailView />} />
+                        <Route path="meta-leads" element={
                           <ProtectedRoute allowedRoles={['ceo', 'setter', 'closer', 'secretary']}>
                             <MetaLeadsView />
                           </ProtectedRoute>
                         } />
-                        <Route path="crm/clientes" element={<ClientsView />} />
-                        <Route path="crm/clientes/:id" element={<ClientDetailView />} />
-                        <Route path="crm/prospeccion" element={
+                        <Route path="clientes" element={<ClientsView />} />
+                        <Route path="clientes/:id" element={<ClientDetailView />} />
+                        <Route path="prospeccion" element={
                           <ProtectedRoute allowedRoles={['ceo', 'setter', 'closer']}>
                             <ProspectingView />
                           </ProtectedRoute>
                         } />
-                        <Route path="crm/vendedores" element={
+                        <Route path="vendedores" element={
                           <ProtectedRoute allowedRoles={['ceo']}>
                             <SellersView />
                           </ProtectedRoute>
                         } />
+                        {/* Paywall Route */}
+                        <Route path="paywall" element={<PaywallView />} />
                         {/* Marketing Routes */}
-                        <Route path="crm/marketing" element={
+                        <Route path="marketing" element={
                           <ProtectedRoute allowedRoles={['ceo', 'admin', 'marketing']}>
                             <MarketingHubView />
                           </ProtectedRoute>
                         } />
-                        <Route path="crm/hsm" element={
+                        <Route path="hsm" element={
                           <ProtectedRoute allowedRoles={['ceo', 'admin', 'setter', 'closer']}>
                             <MetaTemplatesView />
                           </ProtectedRoute>
                         } />
                         <Route path="notificaciones" element={<NotificationsView />} />
                         <Route path="perfil" element={<ProfileView />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="*" element={<Navigate to="/crm" replace />} />
                       </Routes>
                     </Layout>
                   </ProtectedRoute>
                 } />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </SocketProvider>
           </LanguageProvider>

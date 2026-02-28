@@ -146,28 +146,28 @@ export default function NotificationsView() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-[#050505] text-gray-200 pb-20">
             <div className="max-w-6xl mx-auto px-4 pt-8">
                 <PageHeader
                     title={user?.role === 'ceo' ? "Centro de Control (CEO)" : "Mis Notificaciones"}
                     subtitle="Monitoreo en tiempo real de la actividad comercial"
-                    icon={<Bell className="text-primary-600" />}
+                    icon={<Bell className="text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" />}
                 />
 
                 {/* Filters Bar */}
-                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 bg-white/[0.02] backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-2xl">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
                             <button
                                 onClick={() => setUnreadOnly(false)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${!unreadOnly ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${!unreadOnly ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-400 hover:text-white'
                                     }`}
                             >
                                 Todas
                             </button>
                             <button
                                 onClick={() => setUnreadOnly(true)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${unreadOnly ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${unreadOnly ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-400 hover:text-white'
                                     }`}
                             >
                                 No leídas
@@ -176,15 +176,15 @@ export default function NotificationsView() {
 
                         {user?.role === 'ceo' && (
                             <div className="flex items-center gap-2 ml-4">
-                                <Filter size={16} className="text-gray-400" />
+                                <Filter size={16} className="text-blue-400" />
                                 <select
                                     value={selectedSellerId}
                                     onChange={(e) => setSelectedSellerId(e.target.value)}
-                                    className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2 transition-all"
+                                    className="bg-black/40 border border-white/10 text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500/50 outline-none p-2 transition-all"
                                 >
-                                    <option value="all">Todos los vendedores</option>
+                                    <option value="all" className="bg-gray-900">Todos los vendedores</option>
                                     {sellers.map(s => (
-                                        <option key={s.id} value={s.id}>
+                                        <option key={s.id} value={s.id} className="bg-gray-900">
                                             {s.first_name ? `${s.first_name} ${s.last_name || ''}` : s.email} ({s.role})
                                         </option>
                                     ))}
@@ -195,7 +195,7 @@ export default function NotificationsView() {
 
                     <button
                         onClick={() => fetchNotifications(0, false)}
-                        className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all"
+                        className="p-2 text-gray-400 hover:text-blue-400 hover:bg-white/5 rounded-full transition-all border border-transparent hover:border-white/10"
                         title="Refrescar"
                     >
                         <RefreshCw size={20} className={loading && !loadingMore ? 'animate-spin' : ''} />
@@ -212,22 +212,26 @@ export default function NotificationsView() {
                     )}
 
                     {!loading && notifications.length === 0 ? (
-                        <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
-                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Bell size={40} className="text-gray-300" />
+                        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl p-12 text-center border border-dashed border-white/10 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mt-16"></div>
+                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-inner">
+                                <Bell size={40} className="text-gray-600" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900">Sin notificaciones</h3>
-                            <p className="text-gray-500 mt-2">No se encontraron alertas para el filtro seleccionado.</p>
+                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">Sin notificaciones</h3>
+                            <p className="text-gray-500 mt-2 font-medium">No se encontraron alertas para el filtro seleccionado.</p>
                         </div>
                     ) : (
                         <>
                             {notifications.map((n) => (
                                 <div
                                     key={n.id}
-                                    className={`bg-white rounded-2xl p-5 border transition-all hover:shadow-md flex gap-4 ${!n.read ? 'border-primary-200 bg-primary-50/10' : 'border-gray-200'
+                                    className={`bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 border transition-all hover:bg-white/[0.04] flex gap-4 relative overflow-hidden ${!n.read ? 'border-blue-500/30' : 'border-white/10'
                                         }`}
                                 >
-                                    <div className={`flex-none w-12 h-12 rounded-xl flex items-center justify-center ${!n.read ? 'bg-primary-100' : 'bg-gray-100'
+                                    {!n.read && (
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-blue-500 rounded-r-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    )}
+                                    <div className={`flex-none w-12 h-12 rounded-xl flex items-center justify-center border ${!n.read ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-white/5 border-white/10 text-gray-500'
                                         }`}>
                                         {getTypeIcon(n.type)}
                                     </div>
@@ -235,17 +239,17 @@ export default function NotificationsView() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-1">
                                             <div className="flex items-center gap-2">
-                                                <h4 className={`font-bold text-gray-900 truncate ${!n.read ? '' : 'font-semibold'}`}>
+                                                <h4 className={`font-bold text-sm truncate ${!n.read ? 'text-white' : 'text-gray-400'}`}>
                                                     {n.title}
                                                 </h4>
                                                 {getPriorityBadge(n.priority)}
                                             </div>
-                                            <span className="text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
-                                                <Calendar size={12} />
+                                            <span className="text-[10px] font-bold text-gray-500 flex items-center gap-1 whitespace-nowrap uppercase tracking-tighter">
+                                                <Calendar size={12} className="text-blue-400/50" />
                                                 {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
                                             </span>
                                         </div>
-                                        <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                                        <p className={`text-sm leading-relaxed mb-3 ${!n.read ? 'text-gray-300' : 'text-gray-500'}`}>
                                             {n.message}
                                         </p>
 
@@ -253,7 +257,7 @@ export default function NotificationsView() {
                                             {!n.read && (
                                                 <button
                                                     onClick={() => markAsRead(n.id)}
-                                                    className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1 uppercase tracking-wider"
+                                                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 uppercase tracking-widest bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 transition-all hover:bg-blue-500/20"
                                                 >
                                                     <CheckCircle size={14} />
                                                     Marcar como leída
@@ -263,7 +267,7 @@ export default function NotificationsView() {
                                             {n.related_entity_id && (
                                                 <a
                                                     href={n.related_entity_type === 'conversation' ? `/chat?phone=${n.metadata?.phone}` : `/leads/${n.related_entity_id}`}
-                                                    className="text-xs font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 uppercase tracking-wider bg-gray-100 px-3 py-1 rounded-md transition-all"
+                                                    className="text-[10px] font-bold text-gray-400 hover:text-white flex items-center gap-1 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 transition-all hover:bg-white/10"
                                                 >
                                                     <Info size={14} />
                                                     Ir al detalle
@@ -278,7 +282,7 @@ export default function NotificationsView() {
                                 <button
                                     onClick={loadMore}
                                     disabled={loadingMore}
-                                    className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-gray-600 font-bold hover:bg-gray-50 flex items-center justify-center gap-2 transition-all shadow-sm"
+                                    className="w-full py-4 bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-2xl text-gray-400 font-bold hover:bg-white/[0.05] hover:text-white flex items-center justify-center gap-2 transition-all shadow-xl"
                                 >
                                     {loadingMore ? (
                                         <>

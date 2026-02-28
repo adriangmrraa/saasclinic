@@ -154,6 +154,12 @@ api.interceptors.response.use(
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
+    } else if (status === 402) {
+      console.warn('[API] ⚠️ Payment Required - Trial Expirado');
+      // Trigger event for global UI handling, or force redirect
+      if (!window.location.pathname.includes('/billing')) {
+        window.location.href = '/billing';
+      }
     } else if (status === 403) {
       console.warn('[API] ⚠️ Forbidden - Posible error de tenant');
       // Trigger event for tenant-related errors

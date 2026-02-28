@@ -236,103 +236,104 @@ export default function CrmAgendaView() {
   }));
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-transparent">
-      <div className="flex-shrink-0 px-4 lg:px-6 pt-4 lg:pt-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full lg:w-auto gap-4">
-            <div className="border-l-4 border-blue-500 pl-3 sm:pl-4 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">{t('agenda_crm.title')}</h1>
-              <p className="text-xs sm:text-sm text-slate-600 mt-0.5">{t('agenda_crm.subtitle')}</p>
+    <div className="flex flex-col h-screen overflow-hidden bg-[#050505] text-white">
+      <div className="flex-shrink-0 px-4 lg:px-6 pt-4 lg:pt-6 bg-[#050505]/50 backdrop-blur-md border-b border-white/10 pb-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full lg:w-auto gap-6">
+            <div className="border-l-4 border-blue-500 pl-4 min-w-0">
+              <h1 className="text-2xl font-bold text-white tracking-tight">{t('agenda_crm.title')}</h1>
+              <p className="text-sm text-gray-400 font-medium mt-0.5">{t('agenda_crm.subtitle')}</p>
             </div>
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100 w-full sm:w-auto">
-              <User size={16} className="text-blue-600 shrink-0" />
+            <div className="flex items-center gap-3 bg-white/[0.02] px-4 py-2.5 rounded-xl shadow-lg border border-white/10 w-full sm:w-auto backdrop-blur-sm group hover:border-white/20 transition-all">
+              <User size={18} className="text-blue-400 shrink-0" />
               <select
                 value={selectedSellerId}
                 onChange={(e) => setSelectedSellerId(e.target.value)}
-                className="bg-transparent border-none text-xs font-medium focus:ring-0 outline-none text-slate-900 cursor-pointer w-full"
+                className="bg-transparent border-none text-sm font-bold focus:ring-0 outline-none text-white cursor-pointer w-full appearance-none"
               >
-                <option value="all">{t('agenda_crm.all_sellers')}</option>
+                <option value="all" className="bg-[#151515]">{t('agenda_crm.all_sellers')}</option>
                 {sellers.map((s) => (
-                  <option key={s.id} value={s.id.toString()}>
+                  <option key={s.id} value={s.id.toString()} className="bg-[#151515]">
                     {s.first_name} {s.last_name || ''}
                   </option>
                 ))}
               </select>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {isBackgroundSyncing && (
-              <RefreshCw size={16} className="text-blue-500 animate-spin opacity-60" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <RefreshCw size={14} className="text-blue-400 animate-spin" />
+                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Sincronizando</span>
+              </div>
             )}
           </div>
         </div>
+      </div>
 
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 relative">
         {isMobile ? (
-          <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-              <MobileAgenda
-                appointments={mobileAppointments}
-                googleBlocks={[]}
-                selectedDate={selectedDate || new Date()}
-                onDateChange={(d) => setSelectedDate(d)}
-                onEventClick={(evt: any) => {
-                  const full = filteredEvents.find((e) => e.id === evt.id);
-                  if (full) {
-                    setSelectedEvent(full);
-                    setFormData({ seller_id: full.seller_id, title: full.title, start_datetime: full.start_datetime, end_datetime: full.end_datetime, notes: full.notes || '' });
-                    setShowModal(true);
-                  }
-                }}
-                professionals={sellers.map((s) => ({ id: s.id, first_name: s.first_name, last_name: s.last_name, email: s.email, is_active: s.is_active }))}
-              />
-            </div>
+          <div className="flex flex-col h-full min-h-0 bg-white/[0.02] border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden">
+            <MobileAgenda
+              appointments={mobileAppointments}
+              googleBlocks={[]}
+              selectedDate={selectedDate || new Date()}
+              onDateChange={(d) => setSelectedDate(d)}
+              onEventClick={(evt: any) => {
+                const full = filteredEvents.find((e) => e.id === evt.id);
+                if (full) {
+                  setSelectedEvent(full);
+                  setFormData({ seller_id: full.seller_id, title: full.title, start_datetime: full.start_datetime, end_datetime: full.end_datetime, notes: full.notes || '' });
+                  setShowModal(true);
+                }
+              }}
+              professionals={sellers.map((s) => ({ id: s.id, first_name: s.first_name, last_name: s.last_name, email: s.email, is_active: s.is_active }))}
+            />
           </div>
         ) : (
-          <div className="flex-1 min-h-0 px-4 lg:px-6 pb-4 lg:pb-6">
-            <div className="h-[calc(100vh-140px)] bg-white/60 backdrop-blur-lg border border-white/40 shadow-xl rounded-2xl p-2 sm:p-4 overflow-y-auto">
-              {loading && events.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
-                  <p className="ml-3 text-gray-500 font-medium">{t('common.loading')}</p>
-                </div>
-              ) : (
-                <FullCalendar
-                  ref={calendarRef}
-                  plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
-                  initialView="timeGridWeek"
-                  editable={false}
-                  selectable={true}
-                  dayMaxEvents={true}
-                  weekends={true}
-                  nowIndicator={true}
-                  slotDuration="00:15:00"
-                  slotLabelInterval="01:00"
-                  initialDate={new Date()}
-                  headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'timeGridDay,timeGridWeek,dayGridMonth',
-                  }}
-                  height="auto"
-                  datesSet={handleDatesSet}
-                  dateClick={handleDateClick}
-                  eventClick={handleEventClick}
-                  slotMinTime="08:00:00"
-                  slotMaxTime="20:00:00"
-                  locale={language}
-                  buttonText={{
-                    today: t('agenda.today'),
-                    month: t('agenda.month'),
-                    week: t('agenda.week'),
-                    day: t('agenda.day'),
-                  }}
-                  events={calendarEvents}
-                />
-              )}
-            </div>
+          <div className="h-full min-h-0 bg-white/[0.02] backdrop-blur-md border border-white/10 shadow-2xl rounded-2xl p-4 sm:p-6 overflow-y-auto custom-calendar-glass">
+            {loading && events.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs animate-pulse">{t('common.loading')}</p>
+              </div>
+            ) : (
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
+                initialView="timeGridWeek"
+                editable={false}
+                selectable={true}
+                dayMaxEvents={true}
+                weekends={true}
+                nowIndicator={true}
+                slotDuration="00:15:00"
+                slotLabelInterval="01:00"
+                initialDate={new Date()}
+                headerToolbar={{
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'timeGridDay,timeGridWeek,dayGridMonth',
+                }}
+                height="100%"
+                datesSet={handleDatesSet}
+                dateClick={handleDateClick}
+                eventClick={handleEventClick}
+                slotMinTime="08:00:00"
+                slotMaxTime="20:00:00"
+                locale={language}
+                buttonText={{
+                  today: t('agenda.today'),
+                  month: t('agenda.month'),
+                  week: t('agenda.week'),
+                  day: t('agenda.day'),
+                }}
+                events={calendarEvents}
+              />
+            )}
           </div>
         )}
-      </div>
+      </main>
 
       <AgendaEventForm
         isOpen={showModal}

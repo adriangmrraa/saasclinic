@@ -27,9 +27,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
+    if (user && user.subscription_status === 'trial' && user.trial_ends_at) {
+        if (new Date() > new Date(user.trial_ends_at)) {
+            return <Navigate to="/crm/paywall" replace />;
+        }
+    }
+
     if (allowedRoles && user && !allowedRoles.includes(user.role)) {
         // If user doesn't have the required role, redirect to dashboard or home
-        return <Navigate to="/" replace />;
+        return <Navigate to="/crm" replace />;
     }
 
     return <>{children}</>;

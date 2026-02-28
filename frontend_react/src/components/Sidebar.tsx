@@ -68,15 +68,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, onCloseMo
   };
 
   return (
-    <aside className="h-full bg-medical-900 text-white flex flex-col relative shadow-xl overflow-hidden">
+    <aside className="h-full bg-[#0a0a0a] text-white flex flex-col relative border-r border-white/10 overflow-hidden">
       {/* Logo Area */}
-      <div className={`h-16 flex items-center ${collapsed && !onCloseMobile ? 'justify-center' : 'px-6'} border-b border-medical-800 shrink-0`}>
+      <div className={`h-16 flex items-center ${collapsed && !onCloseMobile ? 'justify-center' : 'px-6'} border-b border-white/10 shrink-0`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-            <Stethoscope size={18} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
+            <Stethoscope size={18} className="text-blue-400" />
           </div>
           {(!collapsed || onCloseMobile) && (
-            <span className="font-semibold text-lg truncate whitespace-nowrap">
+            <span className="font-semibold text-lg tracking-tight truncate whitespace-nowrap bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               {t('nav.app_name_crm')}
             </span>
           )}
@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, onCloseMo
       {!onCloseMobile && (
         <button
           onClick={onToggle}
-          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-white rounded-full shadow-lg items-center justify-center text-medical-900 hover:bg-gray-100 transition-all z-20"
+          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-[#1a1a1a] border border-white/10 rounded-full shadow-xl items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all z-20"
           aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -109,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, onCloseMo
       <nav className={`flex-1 py-4 overflow-y-auto overflow-x-hidden ${collapsed && !onCloseMobile ? 'px-2' : 'px-3'}`}>
         {filteredItems.map((item) => {
           const labelKey = item.labelKey;
+          const active = isActive(item.path);
           return (
             <button
               key={item.id}
@@ -116,13 +117,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, onCloseMo
                 navigate(item.path);
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-1 group ${isActive(item.path)
-                ? 'bg-white/10 text-white'
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 mb-1 group ${active
+                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               title={collapsed && !onCloseMobile ? t(labelKey) : undefined}
             >
-              <span className="flex-shrink-0 group-hover:scale-110 transition-transform">{item.icon}</span>
+              <span className={`flex-shrink-0 transition-transform ${active ? 'scale-110 text-blue-400' : 'group-hover:scale-110'}`}>
+                {item.icon}
+              </span>
               {(!collapsed || onCloseMobile) && <span className="font-medium text-sm truncate">{t(labelKey)}</span>}
             </button>
           );
@@ -140,14 +143,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, onCloseMo
 
       {/* Footer Info */}
       {(!collapsed || onCloseMobile) && (
-        <div className="p-4 border-t border-medical-800 bg-medical-900/50 shrink-0">
+        <div className="p-4 border-t border-white/10 bg-white/5 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-medical-600 flex items-center justify-center text-xs font-medium uppercase shrink-0">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs font-medium uppercase shrink-0 text-blue-400">
               {user?.email?.[0] || 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate text-white">{user?.email}</p>
-              <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider font-semibold">{user?.role}</p>
+              <p className="text-[10px] text-gray-500 truncate uppercase tracking-wider font-semibold">{user?.role}</p>
             </div>
           </div>
         </div>

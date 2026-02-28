@@ -6,7 +6,7 @@ description: Especialista en Diseño Responsivo (Mobile First / Desktop Adaptive
 # 🎨 Nexus UI Architect
 
 ## Misión
-Garantizar que cada vista de **Dentalogic** funcione perfectamente tanto en dispositivos móviles (iPhone SE/14 Pro) como en monitores Desktop (1080p/4k), manteniendo la estética "Premium Deep Tech" de Nexus.
+Garantizar que cada vista de **SAAS CRM** funcione perfectamente tanto en dispositivos móviles (iPhone SE/14 Pro) como en monitores Desktop (1080p/4k), manteniendo la estética "Premium Deep Tech" de Nexus.
 
 ## 🛠️ Herramientas y Stack
 - **Framework**: React 18 + Vite.
@@ -57,7 +57,7 @@ Diseñamos pensando en pantallas verticales estrechas.
 4.  **Espaciado**: Márgenes laterales (`px-4` o `px-6`) para que el contenido no pegue al borde. Se recomienda aplicar el padding a nivel de vista maestra, no en el Layout global.
 5.  **Aislamiento de Scroll**: Evitar el scroll global de la página (`body`). Usar `h-screen overflow-hidden` en el root Layout y habilitar `overflow-y-auto` + `min-h-0` solo en los paneles de contenido.
 6.  **Interacción**: Estados `:hover` solo en desktop. `:active` para feedback táctil en mobile.
-7.  **Patrón Agenda Clínica**:
+7.  **Patrón Agenda de Ventas**:
     - **Desktop**: Uso de `resource-timegrid` para boxes/especialistas.
     - **Mobile**: Cambio obligatorio a `MobileAgenda` (Vertical Stack) + `DateStrip` (Horizontal Navigation).
     - **Sincronización**: Utilizar `calendarApi.refetchEvents()` en eventos WebSocket para garantizar consistencia absoluta en entornos multi-usuario.

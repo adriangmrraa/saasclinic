@@ -7,23 +7,34 @@ from langchain.tools import BaseTool
 
 from core.tools import tool_registry
 
-# Import tools from the niche implementation (stubs until full implementation)
+# Import classes from the local ai_tools module
 try:
-    from niches.crm_sales.sales_tools import (
-        lead_scoring,
-        list_templates,
-        book_sales_meeting,
+    from modules.crm_sales.ai_tools import (
+        GetPipelineStagesTool,
+        CheckSellerAvailabilityTool,
+        CreateOrUpdateLeadTool,
+        AssignToCloserAndHandoffTool,
+        BookSalesMeetingTool,
     )
-    _CRM_TOOLS = [lead_scoring, list_templates, book_sales_meeting]
-except ImportError:
-    _CRM_TOOLS = []
+    _TOOL_CLASSES = [
+        GetPipelineStagesTool,
+        CheckSellerAvailabilityTool,
+        CreateOrUpdateLeadTool,
+        AssignToCloserAndHandoffTool,
+        BookSalesMeetingTool
+    ]
+except ImportError as e:
+    import logging
+    logging.error(f"Failed to load CRM tool classes: {e}")
+    _TOOL_CLASSES = []
 
 
 def crm_sales_tools_provider(tenant_id: int) -> List[BaseTool]:
     """
-    Returns the list of tools available for the CRM Sales niche.
+    Returns the list of tools available for the CRM Sales niche, 
+    instantiated with the specific tenant_id for security.
     """
-    return list(_CRM_TOOLS)
+    return [ToolClass(tenant_id=tenant_id) for ToolClass in _TOOL_CLASSES]
 
 
 # Auto-register when module is imported

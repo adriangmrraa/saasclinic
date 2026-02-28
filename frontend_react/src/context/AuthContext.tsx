@@ -7,6 +7,8 @@ interface User {
     role: 'ceo' | 'professional' | 'secretary' | 'setter' | 'closer';
     tenant_id?: number;
     niche_type?: 'dental' | 'crm_sales';
+    subscription_status?: string;
+    trial_ends_at?: string;
 }
 
 interface AuthContextType {

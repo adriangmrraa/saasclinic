@@ -1,6 +1,6 @@
-# Guía para Desarrolladores - Mantenimiento y Extensión
+# Guía para Desarrolladores - SAAS CRM
 
-Este documento contiene tips técnicos para mantener, debugear y extender **Dentalogic**, la plataforma de gestión clínica dental.
+Este documento contiene tips técnicos para mantener, debugear y extender **SAAS CRM**, la plataforma multi-tenant de gestión de ventas y prospección.
 
 ## 1. Agregar una Nueva Herramienta (Tool)
 
@@ -26,9 +26,9 @@ Busca la lista `tools` y agrega la referencia.
 
 ## 2. Paginación y Carga Incremental de Mensajes
 
-Para optimizar el rendimiento en conversaciones extensas, Dentalogic utiliza un sistema de carga bajo demanda en `ChatsView.tsx`:
-- **Backend (Admin API)**: Soporta parámetros `limit` (default 50) y `offset` para consultas SQL (`LIMIT $2 OFFSET $3`).
-- **Frontend**: Utiliza el estado `messageOffset` para gestionar qué bloque de mensajes solicitar. Los nuevos mensajes se concatenan al principio del array `messages` preservando la cronología.
+Para optimizar el rendimiento en conversaciones extensas, el sistema utiliza una carga bajo demanda en `ChatsView.tsx`:
+- **Backend (Admin API)**: Soporta parámetros `limit` (default 50) y `offset` para consultas SQL.
+- **Frontend**: Utiliza el estado `messageOffset` para gestionar qué bloque de mensajes solicitar.
 
 ## 3. Deduplicación de Mensajes
  
@@ -43,7 +43,7 @@ Redis almacena los `message_id` por 2 minutos para evitar procesar dobles webhoo
 ## 10. Versioning y Migración (Maintenance Robot)
 
 Si necesitas cambiar la base de datos:
-1.  Agrega el cambio en `db/init/dentalogic_schema.sql` (Foundation).
+1.  Agrega el cambio en `db/init/saas_crm_schema.sql` (Foundation).
 2.  Agrega un parche en `orchestrator_service/db.py` (Evolution). Usa bloques `DO $$` para que sea idempotente.
 
 **Ejemplo: Patch working_hours (Feb 2026)**
@@ -108,11 +108,11 @@ Se recomienda el uso de `format(parseISO(...), 'yyyy-MM-dd')` de `date-fns` para
 
 ## 21. Sovereign Analytics Engine (2026-02-08)
 
-### 21.1 Lógica de Ingresos por Asistencia
-Para garantizar el alineamiento con el flujo de caja real, los ingresos en el Dashboard **solo** se cuentan si:
+### 21.1 Lógica de Ingresos y Conversiones
+Para cumplir con el flujo real, los ingresos en el Dashboard **solo** se cuentan si:
 1. La transacción en `accounting_transactions` tiene `status = 'completed'`.
-2. El turno (`appointment_id`) asociado tiene `status` en `('completed', 'attended')`.
-*No se deben sumar ingresos de turnos `scheduled` o `confirmed` hasta que se valide la presencia del paciente.*
+2. El evento de venta (`seller_agenda_events`) asociado ha sido validado.
+*No se deben sumar ingresos de leads en frío hasta que se valide la transacción.*
 
 ### 21.2 Filtrado de Rangos (Query Params)
 El endpoint `/admin/stats/summary` requiere el parámetro `range` (`weekly` | `monthly`) para calcular los intervalos SQL dinámicamente. 
@@ -120,8 +120,8 @@ El endpoint `/admin/stats/summary` requiere el parámetro `range` (`weekly` | `m
 ### 21.3 Conteo de Conversaciones (Threads vs Messages)
 Para evitar inflación de métricas, el conteo de conversaciones **debe** usar `DISTINCT from_number`. Un paciente puede intercambiar 200 mensajes, pero el Dashboard lo reportará como **1 conversación** para medir alcance real, no volumen de tokens.
 
-### 21.4 Mapeo de Contexto Clínico (Frontend Compatibility)
-En el endpoint `/admin/patients/phone/{phone}/context`, el backend realiza un alias explícito: `appointment_datetime AS date`. Esto es necesario porque el componente `ChatsView.tsx` consume el campo `date` para uniformidad con otros dashboards de la plataforma. Cualquier cambio en el esquema de Citas debe mantener este alias para evitar errores de "Invalid Date".
+### 21.4 Mapeo de Contexto de Leads (Frontend Compatibility)
+En el endpoint `/admin/core/crm/leads/phone/{phone}/context`, el backend realiza un alias explícito: `event_datetime AS date`. Esto es necesario porque el componente `ChatsView.tsx` consume el campo `date` para uniformidad con otros dashboards de la plataforma. Cualquier cambio en el esquema debe mantener este alias para evitar errores de "Invalid Date".
 
 ### 21.5 Robustez en Sincronización JIT (GCal Blocks)
 Para evitar que fallos en un solo calendario bloqueen todo el sistema de disponibilidad, se implementó `ON CONFLICT (google_event_id) DO NOTHING` en las inserciones de `google_calendar_blocks`. Esto permite que agendas sugeridas o compartidas entre profesionales no generen duplicados ni errores 500 durante la consulta JIT.
@@ -130,10 +130,9 @@ Para evitar que fallos en un solo calendario bloqueen todo el sistema de disponi
 Se ha migrado la validación de `working_hours` del uso de nombres de días (`strftime("%A")`) a índices numéricos de Python (`target_date.weekday()`). 
 *   **Razón**: El locale del servidor (Inglés vs Español) puede alterar los nombres de los días, rompiendo el mapeo con el JSONB de la base de datos. Usar `0-6` garantiza que el sistema funcione en cualquier entorno de despliegue (Local, Render, VPS).
 
-### 21.7 Lógica "Service-First" en Agente IA
-El protocolo de agendamiento se ha reestructurado para que el agente indague el servicio clínico **antes** de solicitar datos personales (DNI, Nombre).
-*   **Objetivo**: Obtener la duración del tratamiento (`treatment_types`) de forma inmediata para que `check_availability` devuelva slots precisos.
-*   **Sugerencia Contextual**: Si el paciente es vago, la IA sugiere tratamientos típicos según la especialidad del tenant.
+### 21.7 Lógica "Qualification-First" en Agente IA
+El protocolo de ventas se ha reestructurado para que el agente califique el perfil del lead **antes** de solicitar una reunión.
+*   **Objetivo**: Obtener datos de interés de forma inmediata para que `check_seller_availability` devuelva slots precisos.
 
 ---
 
@@ -183,6 +182,22 @@ Para que otra IA tome contexto completo del proyecto en una nueva conversación,
 ### 23.4 Especificación
 Ver **README** (sección Landing / Demo pública) y **`docs/SPECS_IMPLEMENTADOS_INDICE.md`** para trazabilidad; detalle de la landing (móvil, conversión, estética) en código (LandingView, LoginView demo).
 
+## 24. Aesthetic Standard: Sovereign Dark Glass (SDG)
+
+La plataforma utiliza el estándar visual **Sovereign Dark Glass** para garantizar una experiencia premium y cohesiva.
+
+### 24.1 Reglas de Oro del Diseño
+- **Glassmorphism**: Todos los contenedores principales deben usar `bg-white/5` (o similar) con `backdrop-blur-md`.
+- **Borders sutiles**: Usar `border border-white/10` para separar secciones sin cargar la vista.
+- **Dark Mode forzado**: No hay modo claro. Usar paleta de negros y grises profundos.
+- **Status Badges**: Usar gradientes para los estados (Leads, etc.) en lugar de colores planos.
+
+### 24.2 Estructura de Componentes
+Cada nueva vista debe seguir el **Blueprint SDG**:
+1. Contenedor principal con padding consistente.
+2. Cabecera con título en gradiente.
+3. Grid o Flex Layout para organizar la información en tarjetas "glass".
+
 ---
 
-*Guía de Desarrolladores Dentalogic © 2026*
+*Guía de Desarrolladores SAAS CRM © 2026*

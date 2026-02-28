@@ -25,7 +25,7 @@ from modules.crm_sales.models import (
     SellerCreate, SellerUpdate,
     AgendaEventCreate, AgendaEventUpdate,
     ProspectingScrapeRequest, ProspectingLeadResponse, ProspectingSendRequest,
-    CrmDashboardStats,
+    CrmDashboardStats, AiActionResponse
 )
 from core.security import get_current_user_context, verify_admin_token, get_resolved_tenant_id, get_allowed_tenant_ids, audit_access
 from core.utils import normalize_phone
@@ -317,20 +317,36 @@ async def update_lead_stage(
     return dict(row)
 
 
-@router.delete("/leads/{lead_id}", status_code=200)
-async def delete_lead(
+    return {"status": "deleted", "id": str(lead_id)}
+
+
+@router.get("/leads/{lead_id}/ai-actions", response_model=List[AiActionResponse])
+async def get_lead_ai_actions(
     lead_id: UUID,
     context: dict = Depends(get_current_user_context)
 ):
-    """Soft-delete a lead (set status to 'deleted')."""
+    """Get the history of AI actions for a specific lead"""
     tenant_id = context["tenant_id"]
-    result = await db.pool.execute(
-        "UPDATE leads SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND tenant_id = $2",
-        lead_id, tenant_id
-    )
-    if result == "UPDATE 0":
-        raise HTTPException(status_code=404, detail="Lead not found")
-    return {"status": "deleted", "id": str(lead_id)}
+    
+    rows = await db.pool.fetch("""
+        SELECT id, tenant_id, lead_id, type, title, summary, metadata, created_at
+        FROM ai_actions
+        WHERE lead_id = $1 AND tenant_id = $2
+        ORDER BY created_at DESC
+    """, lead_id, tenant_id)
+    
+    # Ensure metadata is parsed if it's a string (though it should be JSONB)
+    results = []
+    for row in rows:
+        d = dict(row)
+        if isinstance(d.get("metadata"), str):
+            try:
+                d["metadata"] = json.loads(d["metadata"])
+            except:
+                d["metadata"] = {}
+        results.append(d)
+        
+    return results
 
 
 @router.post("/leads/{lead_id}/convert-to-client", response_model=ClientResponse, status_code=201)
@@ -1038,8 +1054,8 @@ async def _send_prospecting_outreach_background(
                 if resp.status_code == 200:
                     # Mark as sent
                     await db.pool.execute(
-                        "UPDATE leads SET outreach_message_sent = TRUE, outreach_last_sent_at = NOW(), outreach_message_content = $1 WHERE id = $2",
-                        f"Template: {template_name}", lead["id"]
+                        "UPDATE leads SET outreach_message_sent = TRUE, outreach_last_sent_at = NOW(), outreach_message_content = $1 WHERE id = $2 AND tenant_id = $3",
+                        f"Template: {template_name}", lead["id"], tenant_id
                     )
                     logger.info(f"outreach_sent_success: phone={phone}, lead_id={str(lead['id'])}")
                 else:
@@ -1659,11 +1675,13 @@ async def update_seller(
         idx += 1
     if not updates:
         return {"id": id, "status": "unchanged"}
+    where_idx = len(params) + 1
     params.append(id)
+    where_tenant_idx = len(params) + 1
+    params.append(row["tenant_id"])
     updates.append("updated_at = NOW()")
     set_clause = ", ".join(updates)
-    where_idx = len(params)
-    await db.pool.execute(f"UPDATE sellers SET {set_clause} WHERE id = ${where_idx}", *params)
+    await db.pool.execute(f"UPDATE sellers SET {set_clause} WHERE id = ${where_idx} AND tenant_id = ${where_tenant_idx}", *params)
     return {"id": id, "status": "updated"}
 
 

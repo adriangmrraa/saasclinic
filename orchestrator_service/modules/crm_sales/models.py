@@ -3,7 +3,7 @@ CRM Sales Module - Pydantic Models
 Data validation models for CRM endpoints
 """
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
@@ -86,12 +86,30 @@ class LeadStageUpdateRequest(BaseModel):
 
 
 # ============================================
+# AI ACTIONS HISTORY
+# ============================================
+
+class AiActionResponse(BaseModel):
+    """Response model for AI actions history"""
+    id: UUID
+    tenant_id: int
+    lead_id: UUID
+    type: str
+    title: str
+    summary: str
+    metadata: Dict[str, Any] = {}
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================
 # PROSPECTING (APIFY SCRAP PHONES)
 # ============================================
 
 class ProspectingScrapeRequest(BaseModel):
     """Request to scrape prospects from Apify."""
-    tenant_id: int
     niche: str = Field(..., min_length=2)
     location: str = Field(..., min_length=2)
     max_places: int = Field(default=30, ge=1, le=100)
@@ -136,7 +154,6 @@ class ProspectingLeadResponse(BaseModel):
 
 class ProspectingSendRequest(BaseModel):
     """Request to queue/send template outreach (Phase 3)."""
-    tenant_id: int
     lead_ids: Optional[List[UUID]] = None
     only_pending: bool = True
     template_name: Optional[str] = None
@@ -298,7 +315,6 @@ class SellerCreate(BaseModel):
     email: str
     phone_number: Optional[str] = None
     role: str = Field(..., description="setter | closer")
-    tenant_id: Optional[int] = None
 
 
 class SellerUpdate(BaseModel):

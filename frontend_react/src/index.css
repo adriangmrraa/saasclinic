@@ -7,31 +7,26 @@
    ============================================ */
 
 :root {
-  /* Medical Premium Palette */
-  --medical-900: #003366;
-  --medical-800: #004080;
-  --medical-700: #004d99;
+  /* Sovereign Dark Glass Palette Tokens */
+  --dark-base: #050505;
+  --dark-surface: rgba(255, 255, 255, 0.02);
+  --dark-border: rgba(255, 255, 255, 0.1);
+  --accent-neon: #2563EB;
+
+  /* Medical Legacy Palette (Reserved for specific accents if needed) */
   --medical-600: #0059b3;
   --medical-500: #0066cc;
-  --medical-400: #0073e6;
-  --medical-300: #3385ff;
-  
-  /* Clean Whites & Grays */
-  --white-50: #ffffff;
-  --white-100: #f8f9fa;
-  --white-200: #f4f7f6;
-  --white-300: #e9ecef;
-  
+
   /* Semantic Colors */
-  --success: #28a745;
-  --warning: #ffc107;
-  --danger: #dc3545;
-  --info: #17a2b8;
-  
-  /* Shadows */
-  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* Shadows - Sovereign Glass Style */
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-elevated: 0 20px 40px -5px rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -41,12 +36,13 @@
 }
 
 body {
+  @apply bg-[#050505] text-gray-200 antialiased;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--white-100);
-  color: #1a1a1a;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* ============================================
@@ -193,18 +189,37 @@ body {
    ============================================ */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {

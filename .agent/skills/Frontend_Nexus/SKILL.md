@@ -6,15 +6,13 @@ scope: "FRONTEND"
 auto-invoke: true
 ---
 
-# Nexus UI Developer - Dentalogic
-
-# Nexus UI Developer - Dentalogic
+# Nexus UI Developer - SAAS CRM
 
 ## 1. Arquitectura Frontend
 El frontend en `frontend_react/` es una SPA moderna basada en:
 - **React 18** + TypeScript + Vite.
 - **TailwindCSS** para el layout y **Vanilla CSS** para el diseño premium (Glassmorphism).
-- **Lucide Icons** para la iconografía dental.
+- **Lucide Icons** para la iconografía de negocios y ventas.
 ### 1. Gestión de Sesión (Nexus Security v7.6)
 - **Zero LocalStorage**: El token JWT NO debe guardarse en `localStorage`. La sesión se maneja mediante una **Cookie HttpOnly** emitida por el backend.
 - **Axios Configuration**: Es MANDATORIO el uso de `withCredentials: true` en todas las peticiones para que el navegador incluya automáticamente la cookie HttpOnly.
@@ -36,13 +34,12 @@ const api = axios.create({
 ## 3. Vistas Críticas (Business Logic)
 
 ### AgendaView.tsx
-- La pieza central de Dentalogic.
-- Muestra turnos desde la BD y bloqueos de Google Calendar.
-- Permite agendar "Sobreturnos" forzados.
+- Pieza central para la gestión de reuniones de ventas.
+- Muestra eventos desde la BD y bloqueos de Google Calendar de los vendedores.
 
-### DashboardView.tsx (Triage Center)
-- Escucha eventos de Socket.IO (`HIGH_URGENCY_TRIAGE`, `CRITICAL_TRIAGE`).
-- Muestra métricas de hoy: Turnos, Pendientes, Urgencias.
+### DashboardView.tsx
+- Escucha eventos de Socket.IO (`HOT_LEAD`, `NEW_CONVERSION`).
+- Muestra métricas de hoy: Leads, Conversiones, Ingresos.
 - Controla el estado global del Bot IA.
 
 ### ChatsView.tsx (Centro de Mensajería)
@@ -65,7 +62,7 @@ const api = axios.create({
 - Consume `GET /admin/core/audit/logs`.
 - Permite filtrar eventos por severidad y tipo para trazabilidad de seguridad.
 
-## 4. Estilos y UX (Premium Dental)
+## 4. Estilos y UX (Premium SAAS)
 - **Glassmorphism**: Usar clase `.glass` para tarjetas e inputs.
 - **Micro-animaciones**: Usar `animate-pulse` para estados de triaje crítico.
 - **Espaciado**: Márgenes laterales (`px-4` o `px-6`) para que el contenido no pegue al borde. Se recomienda aplicar el padding a nivel de vista maestra, no en el Layout global.

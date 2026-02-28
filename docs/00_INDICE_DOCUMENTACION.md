@@ -1,7 +1,7 @@
-# Índice de documentación – CRM Ventas
+# Índice de documentación – SAAS CRM
 
 Este documento lista **todos** los archivos de la carpeta `docs/` con una breve descripción. Sirve como mapa para encontrar rápidamente qué documento consultar.  
-**Proyecto:** CRM Ventas (Nexus Core) – single-niche CRM de ventas (leads, pipeline, vendedores, agenda, chats).  
+**Proyecto:** SAAS CRM (Nexus Core) – Plataforma multi-tenant de ventas y prospección.  
 **Protocolo:** Non-Destructive Fusion. Última revisión: 2026-02.
 
 ---
@@ -18,10 +18,10 @@ Este documento lista **todos** los archivos de la carpeta `docs/` con una breve 
 | 06 | [06_ai_prompt_template.md](06_ai_prompt_template.md) | Plantilla de prompt para el agente IA. |
 | 07 | [07_workflow_guide.md](07_workflow_guide.md) | Guía de flujo de trabajo: ciclo de tareas, Git, documentación, troubleshooting, comunicación entre servicios. |
 | 08 | [08_troubleshooting_history.md](08_troubleshooting_history.md) | Histórico de problemas y soluciones; sección "Calendario e IA: La IA no puede ver disponibilidad". |
-| 09 | [09_fase1_dental_datos_especificacion.md](09_fase1_dental_datos_especificacion.md) | Fase 1 evolución de datos: especificación técnica, tablas (patients, professionals, appointments, clinical_records, etc.), estado de implementación. |
-| 11 | [11_gap_analysis_nexus_to_dental.md](11_gap_analysis_nexus_to_dental.md) | Análisis de gaps: estado de implementación vs requerimientos finales. |
-| 12 | [12_resumen_funcional_no_tecnico.md](12_resumen_funcional_no_tecnico.md) | Resumen funcional en lenguaje no técnico: qué hace la plataforma, cerebro, dashboard, trabajo en equipo, registro y aprobación, control humano. |
-| 13 | [13_lead_patient_workflow.md](13_lead_patient_workflow.md) | Flujo lead → paciente: protocolo de conversión de contactos a pacientes activos. |
+| 09 | [09_fase1_saas_datos_especificacion.md](09_fase1_saas_datos_especificacion.md) | Fase 1 evolución de datos: especificación técnica, tablas (leads, professionals, events, ai_actions), escenario SAAS. |
+| 11 | [11_gap_analysis_nexus_to_saas.md](11_gap_analysis_nexus_to_saas.md) | Análisis de gaps: estado de implementación vs requerimientos SAAS CRM. |
+| 12 | [12_resumen_funcional_no_tecnico.md](12_resumen_funcional_no_tecnico.md) | Resumen funcional en lenguaje no técnico: qué hace la plataforma, cerebro, dashboard, trabajo en equipo, registro y aprobación, control humano (Dominio SAAS). |
+| 13 | [13_lead_conversion_workflow.md](13_lead_conversion_workflow.md) | Flujo lead → cliente: protocolo de conversión de contactos a ventas cerradas y handoff. |
 | 29 | [29_seguridad_owasp_auditoria.md](29_seguridad_owasp_auditoria.md) | Auditoría de seguridad OWASP Top 10:2025; cómo gestiona el backend la seguridad; JWT + X-Admin-Token; redacción de credenciales en demo. |
 | 30 | [30_audit_api_contrato_2026-02-09.md](30_audit_api_contrato_2026-02-09.md) | Auditoría del contrato API: verificación de que OpenAPI y documentación coinciden con los endpoints reales. |
 | 31 | [31_audit_documentacion_2026-02-09.md](31_audit_documentacion_2026-02-09.md) | Auditoría de documentación: alineación con la plataforma SaaS; corrección de referencias a specs consolidados. |

@@ -51,16 +51,13 @@ app = FastAPI(title="Nexus Orchestrator", version="7.7.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS: merge defaults with CORS_ALLOWED_ORIGINS (comma-separated) for EasyPanel/custom deployments
-_default_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://crmventas-frontend.ugwrjq.easypanel.host",  # EasyPanel CRM Ventas frontend
-]
-_env_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
-if _env_origins:
-    _default_origins.extend(o.strip() for o in _env_origins.split(",") if o.strip())
-origins = list(dict.fromkeys(_default_origins))  # dedupe, keep order
+# CORS: Strict configuration powered by ALLOWED_ORIGINS env
+# Replace wildcard risk with official environment domains
+_env_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+origins = [o.strip() for o in _env_origins.split(",") if o.strip()]
+if not origins:
+    origins = ["http://localhost:5173"]  # Fallback fail-safe
+
 logger.info(f"CORS allow_origins: {origins}")
 app.add_middleware(
     CORSMiddleware,
@@ -144,19 +141,73 @@ except Exception as e:
 # --- LANGCHAIN AGENT FACTORY ---
 llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=OPENAI_API_KEY)
 
-async def get_agent_executor(tenant_id: int):
+async def get_agent_executor(tenant_id: int, source_context: str = ""):
     """
     Creates an AgentExecutor with CRM Sales tools and prompt (single-niche: no sales).
     """
     niche_type = await db.fetchval("SELECT COALESCE(niche_type, 'crm_sales') FROM tenants WHERE id = $1", tenant_id) or "crm_sales"
     tools = tool_registry.get_tools(niche_type, tenant_id)
-    # CRM: cuando agendan una reunión usá book_sales_meeting; la persona pasa a ser lead (no cliente).
-    system_prompt = (
-        "Sos un asistente de ventas inteligente. Cuando el usuario quiera agendar una reunión, "
-        "una demo o una llamada, usá la herramienta book_sales_meeting con la fecha/hora, el motivo y el nombre si lo da. "
-        "Al agendar, la persona se registra como lead (después el equipo puede pasarla a cliente activo desde el CRM)."
+    
+    # 1. Fetch tenant context from DB
+    tenant_info = await db.fetchrow(
+        "SELECT clinic_name, config FROM tenants WHERE id = $1", 
+        tenant_id
     )
     
+    company_name = "su empresa"
+    industry = "servicios"
+    sales_model = "B2B/B2C"
+    
+    if tenant_info:
+        company_name = tenant_info.get("clinic_name", company_name)
+        config_data = tenant_info.get("config")
+        
+        if config_data:
+            if isinstance(config_data, str):
+                import json
+                try:
+                    config_data = json.loads(config_data)
+                except Exception:
+                    config_data = {}
+            if isinstance(config_data, dict):
+                industry = config_data.get("industry", industry)
+                sales_model = config_data.get("sales_model", sales_model)
+    
+    # 2. Master AI Setter 2.0 System Prompt
+    system_prompt = f"""### IDENTITY & CORE MISSION
+Eres el **Advanced AI Sales Setter** oficial de "{company_name}", operando en la industria de {industry}.
+Tu objetivo es transformar conversaciones en oportunidades de negocio reales. No eres un bot de FAQ, eres un **Closer de Next Steps**.
+
+### STRATEGIC CONTEXT
+{source_context}
+1. **INBOUND (Ads/Organic):** El usuario viene buscando una solución. Resalta el valor rápido, resuelve dudas críticas y califica.
+2. **OUTBOUND (Prospection):** El usuario respondió a una plantilla masiva. Sé empático, reconoce el contacto previo y personaliza el abordaje basándote en la sutileza, no en la presión.
+
+### SALES PROTOCOL ({sales_model})
+- **Profile First:** Antes de dar precios o detalles técnicos profundos, entiende el dolor del prospecto.
+- **Value Stacking:** Cada respuesta debe aportar valor antes de pedir información.
+- **Micro-Commitments:** Busca pequeños "sí" antes del agendamiento final. El compromiso ideal es agendar una sesión de consultoría o demo en el calendario local.
+
+### B2B & HIGH TICKET GATEKEEPER (Strict Policy)
+- **STOP:** Si el Lead es una institución, empresa (B2B) o busca servicios de ticket alto, **está terminantemente prohibido** intentar cerrar la venta por chat.
+- **ACTION:** Tu única métrica de éxito en estos casos es el **Handoff Humano**. Debes vender la "Asesoría Experta" con un consultor.
+
+### TOOL OPERATION MANUAL
+- Usá `get_pipeline_stages` para entender cómo se organiza nuestro flujo de ventas.
+- Usá `create_or_update_lead` para registrar cada dato valioso (email, score de calificación) apenas lo obtengas. **No esperes al final.**
+- Usá `check_seller_availability` para ver quién puede atender al cliente.
+- Usá `assign_to_closer_and_handoff` inmediatamente cuando detectes:
+    a) Intención de compra alta.
+    b) Perfil corporativo/B2B.
+    c) El usuario requiere confirmación humana inmediata.
+- Usá `book_sales_meeting` para agendar citas formales. Confirma disponibilidad primero usando `check_seller_availability`.
+
+### COMMUNICATION STYLE
+- Tono: Profesional, ejecutivo, persuasivo pero no intrusivo.
+- Brevedad: Respuestas cortas (máx 2-3 párrafos).
+- Idioma: Español natural.
+"""
+
     # Create dynamic prompt template
     prompt_template = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
@@ -300,9 +351,21 @@ async def chat_inbound(
             elif m.get("role") == "assistant":
                 lc_history.append(AIMessage(content=m.get("content", "")))
 
+        # Prepare Source Context for the LLM
+        source_context = "ORIGEN DESCONOCIDO: Trata al lead con cortesía general."
+        lead_source = lead.get("lead_source") if lead else None
+        
+        if lead_source == "META_ADS":
+            ad_id = referral.get("ad_id") if referral else "N/A"
+            source_context = f"ORIGEN: INBOUND (Facebook/Instagram Ads). Ad ID: {ad_id}. El usuario hizo clic en un anuncio recientemente."
+        elif lead_source == "PROSPECTION" or (referral and not lead_source):
+             source_context = "ORIGEN: OUTBOUND (Prospección Meta). El usuario respondió a una de nuestras plantillas masivas de contacto inicial."
+        elif lead_source == "ORGANIC":
+            source_context = "ORIGEN: ORGÁNICO. El usuario nos contactó directamente o por link de perfil."
+
         current_customer_phone.set(from_number)
         current_tenant_id.set(tenant_id)
-        agent = await get_agent_executor(tenant_id)
+        agent = await get_agent_executor(tenant_id, source_context=source_context)
         result = await agent.ainvoke({"history": lc_history, "input": text})
         output = (result.get("output") or "").strip()
 

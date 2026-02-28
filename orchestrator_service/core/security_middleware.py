@@ -33,8 +33,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # 3. HSTS: Forzar HTTPS. max-age de 6 meses (15768000 seg) incluyendo subdominios
         response.headers["Strict-Transport-Security"] = "max-age=15768000; includeSubDomains"
 
-        # 4. Content-Security-Policy dinámico basado en CORS_ALLOWED_ORIGINS + CSP_EXTRA_DOMAINS
-        allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        # 4. Content-Security-Policy dinámico basado en ALLOWED_ORIGINS + CSP_EXTRA_DOMAINS
+        allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
         extra_domains = os.getenv("CSP_EXTRA_DOMAINS", "").split(",")
 
         # Limpiar y normalizar dominios (quitar protocolos/rutas)

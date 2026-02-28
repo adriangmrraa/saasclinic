@@ -291,21 +291,21 @@ export default function ConfigView() {
 
     const renderGeneralTab = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex items-center gap-2 mb-4">
-                    <Globe size={20} className="text-gray-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">{t('config.language_label')}</h2>
+                    <Globe size={20} className="text-blue-400" />
+                    <h2 className="text-lg font-semibold text-white">{t('config.language_label')}</h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">{t('config.language_help')}</p>
+                <p className="text-sm text-gray-400 mb-4">{t('config.language_help')}</p>
                 <div className="flex flex-wrap gap-3">
                     {LANGUAGE_OPTIONS.map((opt) => (
                         <button
                             key={opt.value}
                             onClick={() => handleLanguageChange(opt.value)}
                             disabled={saving}
-                            className={`px-4 py-2.5 rounded-xl font-medium transition-colors border-2 min-h-[44px] ${selectedLang === opt.value
-                                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                            className={`px-4 py-2.5 rounded-xl font-medium transition-all border min-h-[44px] ${selectedLang === opt.value
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                                : 'border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20 hover:bg-white/[0.05]'
                                 }`}
                         >
                             {saving && selectedLang === opt.value ? <Loader2 className="w-5 h-5 animate-spin" /> : t(opt.labelKey)}
@@ -313,8 +313,8 @@ export default function ConfigView() {
                     ))}
                 </div>
                 {settings && (
-                    <p className="text-xs text-gray-400 mt-3">
-                        {t('config.current_clinic')}: <strong>{settings.name}</strong>
+                    <p className="text-xs text-gray-500 mt-3">
+                        {t('config.current_clinic')}: <strong className="text-blue-400">{settings.name}</strong>
                     </p>
                 )}
             </div>
@@ -324,15 +324,15 @@ export default function ConfigView() {
     const renderYCloudTab = () => (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* 1. Webhook Info */}
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-2 text-green-800">
+            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-6 backdrop-blur-md">
+                <div className="flex items-center gap-2 mb-2 text-green-400">
                     <Zap className="w-5 h-5" />
                     <h3 className="font-semibold">{t('config.webhook_title_ycloud')}</h3>
                 </div>
-                <p className="text-sm text-green-700 mb-4">{t('config.webhook_hint_ycloud')}</p>
+                <p className="text-sm text-gray-400 mb-4">{t('config.webhook_hint_ycloud')}</p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <input readOnly value={intConfig.ycloud_webhook_url || 'Cargando...'} className="flex-1 px-3 py-2 bg-white rounded-lg border border-green-200 text-sm font-mono text-gray-600 focus:outline-none" />
-                    <button onClick={() => copyToClipboard(intConfig.ycloud_webhook_url || '')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 font-medium">
+                    <input readOnly value={intConfig.ycloud_webhook_url || 'Cargando...'} className="flex-1 px-3 py-2 bg-black/40 rounded-lg border border-green-500/20 text-sm font-mono text-green-300 focus:outline-none" />
+                    <button onClick={() => copyToClipboard(intConfig.ycloud_webhook_url || '')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition flex items-center justify-center gap-2 font-medium shadow-lg shadow-green-600/20">
                         <Copy size={16} /> <span className="sm:hidden">{t('config.copy_url')}</span>
                     </button>
                 </div>
@@ -340,30 +340,30 @@ export default function ConfigView() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 {/* 2. Form */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                        <MessageCircle className="text-green-600" size={20} />
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
+                    <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <MessageCircle className="text-green-400" size={20} />
                         {t('config.configure_credential')}
                     </h2>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">{t('config.field_tenant')}</label>
+                            <label className="text-sm font-medium text-gray-400 mb-1 block">{t('config.field_tenant')}</label>
                             <select
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-green-500/50 outline-none transition-all"
                                 value={intConfig.tenant_id === null ? '' : intConfig.tenant_id}
                                 onChange={(e) => setIntConfig({ ...intConfig, tenant_id: e.target.value ? Number(e.target.value) : null })}
                             >
-                                <option value="">{t('config.global_all_tenants')}</option>
-                                {tenants.map(t => <option key={t.id} value={t.id.toString()}>{t.clinic_name}</option>)}
+                                <option value="" className="bg-gray-900">{t('config.global_all_tenants')}</option>
+                                {tenants.map(t => <option key={t.id} value={t.id.toString()} className="bg-gray-900">{t.clinic_name}</option>)}
                             </select>
                         </div>
 
                         <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">YCloud API Key</label>
+                            <label className="text-sm font-medium text-gray-400 mb-1 block">YCloud API Key</label>
                             <input
                                 type="password"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-green-500/50 outline-none transition-all"
                                 placeholder="sk_..."
                                 value={intConfig.ycloud_api_key || ''}
                                 onChange={e => setIntConfig({ ...intConfig, ycloud_api_key: e.target.value })}
@@ -371,10 +371,10 @@ export default function ConfigView() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">Webhook Secret</label>
+                            <label className="text-sm font-medium text-gray-400 mb-1 block">Webhook Secret</label>
                             <input
                                 type="password"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                                className="w-full px-4 py-2 bg-black/40 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-green-500/50 outline-none transition-all"
                                 placeholder="whsec_..."
                                 value={intConfig.ycloud_webhook_secret || ''}
                                 onChange={e => setIntConfig({ ...intConfig, ycloud_webhook_secret: e.target.value })}
@@ -384,7 +384,7 @@ export default function ConfigView() {
                         <button
                             onClick={handleSaveIntegration}
                             disabled={saving}
-                            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold shadow-lg shadow-green-600/20 transition-all flex justify-center items-center gap-2 mt-4"
+                            className="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold shadow-lg shadow-green-600/10 transition-all flex justify-center items-center gap-2 mt-4"
                         >
                             {saving ? <Loader2 className="animate-spin" /> : <><CheckCircle2 size={18} /> {t('config.save_config')}</>}
                         </button>
@@ -392,23 +392,23 @@ export default function ConfigView() {
                 </div>
 
                 {/* 3. Table */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col min-h-[400px]">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('config.active_credentials')}</h2>
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md flex flex-col min-h-[400px]">
+                    <h2 className="text-lg font-semibold text-white mb-4">{t('config.active_credentials')}</h2>
                     <div className="overflow-x-auto flex-1">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider">
+                            <thead className="bg-gray-900/50 text-gray-400 uppercase text-xs tracking-wider border-b border-white/10">
                                 <tr>
                                     <th className="px-4 py-3 rounded-l-lg font-semibold">{t('config.col_tenant')}</th>
                                     <th className="px-4 py-3 font-semibold">{t('config.col_status')}</th>
                                     <th className="px-4 py-3 rounded-r-lg text-right font-semibold">{t('config.col_actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-white/5">
                                 {credentials.filter(c => c.category === 'integration' && c.name === 'YCLOUD_API_KEY').map(c => (
-                                    <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-4 py-4 font-medium text-gray-900">{getTenantName(c.tenant_id)}</td>
+                                    <tr key={c.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="px-4 py-4 font-medium text-white">{getTenantName(c.tenant_id)}</td>
                                         <td className="px-4 py-4">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 text-xs font-medium border border-green-500/20">
                                                 <CheckCircle2 size={12} /> {t('config.status_active')}
                                             </span>
                                         </td>
@@ -416,14 +416,14 @@ export default function ConfigView() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setIntConfig({ ...intConfig, tenant_id: c.tenant_id || null })}
-                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                                                    className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-500/20"
                                                     title="Editar"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteCredential(c.id!)}
-                                                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                                                    className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-500/20"
                                                     title="Eliminar"
                                                 >
                                                     <Trash2 size={16} />
@@ -433,7 +433,7 @@ export default function ConfigView() {
                                     </tr>
                                 ))}
                                 {credentials.filter(c => c.category === 'integration' && c.name === 'YCLOUD_API_KEY').length === 0 && (
-                                    <tr><td colSpan={3} className="px-4 py-12 text-center text-gray-400 italic">{t('config.no_whatsapp_configured')}</td></tr>
+                                    <tr><td colSpan={3} className="px-4 py-12 text-center text-gray-500 italic">{t('config.no_whatsapp_configured')}</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -450,28 +450,28 @@ export default function ConfigView() {
 
         return (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2 text-blue-800">
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 backdrop-blur-md">
+                    <div className="flex items-center gap-2 mb-2 text-blue-400">
                         <Globe className="w-5 h-5" />
                         <h3 className="font-semibold">{t('config.webhook_title_meta')}</h3>
                     </div>
-                    <p className="text-sm text-blue-700 mb-6">{t('config.webhook_hint_meta')}</p>
+                    <p className="text-sm text-gray-400 mb-6">{t('config.webhook_hint_meta')}</p>
 
                     <div className="mb-4">
-                        <label className="text-sm font-medium text-blue-900 mb-1 block">{t('config.field_tenant')}</label>
+                        <label className="text-sm font-medium text-gray-400 mb-1 block">{t('config.field_tenant')}</label>
                         <select
-                            className="w-full sm:w-80 px-4 py-2 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
+                            className="w-full sm:w-80 px-4 py-2 bg-black/40 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 outline-none transition-all text-sm text-white"
                             value={metaTenantId === null ? '' : metaTenantId}
                             onChange={(e) => setMetaTenantId(e.target.value ? Number(e.target.value) : null)}
                         >
-                            <option value="">{t('config.global_all_tenants')}</option>
-                            {tenants.map(t => <option key={t.id} value={t.id.toString()}>{t.clinic_name}</option>)}
+                            <option value="" className="bg-gray-900">{t('config.global_all_tenants')}</option>
+                            {tenants.map(t => <option key={t.id} value={t.id.toString()} className="bg-gray-900">{t.clinic_name}</option>)}
                         </select>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <input readOnly value={fullWebhookUrl} className="flex-1 px-3 py-2 bg-white rounded-lg border border-blue-200 text-sm font-mono text-gray-600 focus:outline-none" />
-                        <button onClick={() => fullWebhookUrl !== 'Cargando...' && copyToClipboard(fullWebhookUrl)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium">
+                        <input readOnly value={fullWebhookUrl} className="flex-1 px-3 py-2 bg-black/40 rounded-lg border border-blue-500/20 text-sm font-mono text-blue-300 focus:outline-none" />
+                        <button onClick={() => fullWebhookUrl !== 'Cargando...' && copyToClipboard(fullWebhookUrl)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition flex items-center justify-center gap-2 font-medium shadow-lg shadow-blue-600/20">
                             <Copy size={16} /> <span className="sm:hidden">{t('config.copy_url')}</span>
                         </button>
                     </div>
@@ -482,14 +482,14 @@ export default function ConfigView() {
 
     const renderOthersTab = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex justify-between items-center bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex justify-between items-center bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{t('config.other_integrations')}</h2>
-                    <p className="text-sm text-gray-500">{t('config.other_integrations_hint')}</p>
+                    <h2 className="text-lg font-semibold text-white">{t('config.other_integrations')}</h2>
+                    <p className="text-sm text-gray-400">{t('config.other_integrations_hint')}</p>
                 </div>
                 <button
                     onClick={() => { setEditingCred(null); setCredForm({ name: '', value: '', category: 'openai', description: '', scope: 'global', tenant_id: null }); setIsCredModalOpen(true); }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center gap-2 font-medium"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-500 flex items-center gap-2 font-medium shadow-lg shadow-purple-600/10 transition-all font-bold"
                 >
                     <Plus size={18} /> Nueva
                 </button>
@@ -497,34 +497,34 @@ export default function ConfigView() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {credentials.filter(c => c.category !== 'integration').map(cred => (
-                    <div key={cred.id} className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-md transition-shadow group relative overflow-hidden">
-                        <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${cred.scope === 'global' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></div>
+                    <div key={cred.id} className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 hover:bg-white/[0.04] transition-all group relative overflow-hidden backdrop-blur-sm">
+                        <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${cred.scope === 'global' ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'}`}></div>
                         <div className="flex justify-between items-start mb-3 pl-2">
                             <div>
-                                <h4 className="font-semibold text-gray-800 leading-tight">{cred.name}</h4>
-                                <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-gray-100 text-xs text-gray-600 font-medium lowercase">
+                                <h4 className="font-semibold text-white leading-tight">{cred.name}</h4>
+                                <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-white/5 text-[10px] text-gray-400 font-bold lowercase border border-white/5 tracking-wider uppercase">
                                     {cred.category} • {cred.scope === 'global' ? 'Global' : getTenantName(cred.tenant_id)}
                                 </span>
                             </div>
-                            <div className="flex gap-1 group-hover:opacity-100 opacity-0 transition-opacity">
-                                <button onClick={() => { setEditingCred(cred); setCredForm({ ...cred, value: '••••••••' }); setIsCredModalOpen(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-indigo-600">
+                            <div className="flex gap-1 group-hover:opacity-100 lg:opacity-0 transition-opacity">
+                                <button onClick={() => { setEditingCred(cred); setCredForm({ ...cred, value: '••••••••' }); setIsCredModalOpen(true); }} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-purple-400 transition-colors">
                                     <Edit2 size={16} />
                                 </button>
-                                <button onClick={() => handleDeleteCredential(cred.id!)} className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600">
+                                <button onClick={() => handleDeleteCredential(cred.id!)} className="p-1.5 hover:bg-rose-500/10 rounded-lg text-gray-400 hover:text-rose-400 transition-colors">
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                         </div>
                         <div className="pl-2">
-                            <div className="bg-gray-50 rounded-lg px-3 py-2 font-mono text-xs text-gray-500 border border-gray-100 flex items-center gap-2">
-                                <Key size={12} className="text-gray-400" />
+                            <div className="bg-black/40 rounded-lg px-3 py-2 font-mono text-[11px] text-gray-400 border border-white/5 flex items-center gap-2">
+                                <Key size={12} className="text-gray-500" />
                                 {cred.value.substring(0, 16)}...
                             </div>
                         </div>
                     </div>
                 ))}
                 {credentials.filter(c => c.category !== 'integration').length === 0 && (
-                    <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <div className="col-span-full py-12 text-center text-gray-500 bg-white/[0.01] rounded-2xl border border-dashed border-white/10">
                         {t('config.no_other_credentials')}
                     </div>
                 )}
@@ -534,35 +534,35 @@ export default function ConfigView() {
 
     const renderMaintenanceTab = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex items-center gap-2 mb-4">
-                    <Database size={20} className="text-gray-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">{t('config.media_maintenance')}</h2>
+                    <Database size={20} className="text-amber-400" />
+                    <h2 className="text-lg font-semibold text-white">{t('config.media_maintenance')}</h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="text-sm text-gray-400 mb-6">
                     {t('config.media_hint')}
                 </p>
 
                 <div className="space-y-6">
-                    <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl border">
-                        <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-4 p-4 bg-white/[0.01] rounded-xl border border-white/5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                                    <Clock size={16} className="text-gray-500" /> {t('config.cleanup_title')}
+                                <h4 className="font-semibold text-white flex items-center gap-2">
+                                    <Clock size={16} className="text-gray-400" /> {t('config.cleanup_title')}
                                 </h4>
-                                <p className="text-xs text-gray-500">{t('config.cleanup_hint')}</p>
+                                <p className="text-[11px] text-gray-500 mt-1">{t('config.cleanup_hint')}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">{t('config.field_age')}</span>
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('config.field_age')}</span>
                                 <select
-                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="px-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-sm text-white outline-none focus:ring-2 focus:ring-amber-500/50"
                                     defaultValue="180"
                                     id="cleanup-days-select"
                                 >
-                                    <option value="30">{t('config.option_1month')}</option>
-                                    <option value="90">{t('config.option_3months')}</option>
-                                    <option value="180">{t('config.option_6months')}</option>
-                                    <option value="365">{t('config.option_1year')}</option>
+                                    <option value="30" className="bg-gray-900">{t('config.option_1month')}</option>
+                                    <option value="90" className="bg-gray-900">{t('config.option_3months')}</option>
+                                    <option value="180" className="bg-gray-900">{t('config.option_6months')}</option>
+                                    <option value="365" className="bg-gray-900">{t('config.option_1year')}</option>
                                 </select>
                             </div>
                         </div>
@@ -573,19 +573,19 @@ export default function ConfigView() {
                                     handleCleanMedia(parseInt(select.value));
                                 }}
                                 disabled={saving}
-                                className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium shadow-md transition-all flex items-center gap-2"
+                                className="px-6 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold shadow-lg shadow-rose-600/10 transition-all flex items-center gap-2 active:scale-95"
                             >
                                 {saving ? <Loader2 className="animate-spin" size={18} /> : <><Trash2 size={18} /> {t('config.run_cleanup')}</>}
                             </button>
                         </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 border-dashed">
+                    <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/10 border-dashed">
                         <div className="flex gap-3">
-                            <Info size={20} className="text-blue-600 shrink-0" />
+                            <Info size={20} className="text-amber-400 shrink-0" />
                             <div>
-                                <h4 className="text-sm font-semibold text-blue-900">{t('config.smart_storage_title')}</h4>
-                                <p className="text-xs text-blue-800 leading-relaxed mt-1">
+                                <h4 className="text-sm font-bold text-amber-300">{t('config.smart_storage_title')}</h4>
+                                <p className="text-[11px] text-amber-200/60 leading-relaxed mt-1">
                                     {t('config.smart_storage_hint')}
                                 </p>
                             </div>
@@ -598,18 +598,18 @@ export default function ConfigView() {
 
     const renderNotificationsTab = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex items-center gap-2 mb-4">
-                    <Bell size={20} className="text-gray-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">Notificaciones</h2>
+                    <Bell size={20} className="text-indigo-400" />
+                    <h2 className="text-lg font-semibold text-white">Notificaciones</h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="text-sm text-gray-400 mb-6">
                     Módulo de configuraciones UI para notificaciones del sistema. (En construcción)
                 </p>
-                <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center min-h-[200px]">
-                    <Bell size={32} className="text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium text-sm">Próximamente</p>
-                    <p className="text-gray-400 text-xs mt-1">Aquí se incluirán los ajustes globales de notificaciones para los agentes.</p>
+                <div className="p-4 bg-white/[0.01] rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center min-h-[200px]">
+                    <Bell size={32} className="text-gray-600 mb-3" />
+                    <p className="text-gray-400 font-bold text-sm tracking-widest uppercase">Próximamente</p>
+                    <p className="text-gray-500 text-[10px] mt-1 text-center max-w-[200px]">Aquí se incluirán los ajustes globales de notificaciones para los agentes.</p>
                 </div>
             </div>
         </div>
@@ -624,7 +624,7 @@ export default function ConfigView() {
     }
 
     return (
-        <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+        <div className="h-screen flex flex-col bg-[#050505] text-gray-200 overflow-hidden">
             {/* Header & Tabs Area (Fixed) */}
             <div className="flex-none p-6 pb-0 max-w-6xl mx-auto w-full">
                 <PageHeader
@@ -646,10 +646,10 @@ export default function ConfigView() {
                 )}
 
                 {/* Tabs Header */}
-                <div className="flex border-b border-gray-200 mb-0 overflow-x-auto bg-white/50 backdrop-blur-sm rounded-t-2xl px-2 scrollbar-hide">
+                <div className="flex border-b border-white/10 mb-0 overflow-x-auto bg-white/[0.02] backdrop-blur-md rounded-t-2xl px-2 scrollbar-hide">
                     <button
                         onClick={() => setActiveTab('general')}
-                        className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'general' ? 'border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                        className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'general' ? 'border-blue-500 text-blue-400 font-semibold bg-blue-500/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-white/20'}`}
                     >
                         <Globe size={18} /> General
                     </button>
@@ -657,31 +657,31 @@ export default function ConfigView() {
                         <>
                             <button
                                 onClick={() => setActiveTab('ycloud')}
-                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ycloud' ? 'border-green-600 text-green-600 font-semibold' : 'border-transparent text-gray-500 hover:text-green-600 hover:border-green-200'}`}
+                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'ycloud' ? 'border-green-500 text-green-400 font-semibold bg-green-500/5' : 'border-transparent text-gray-500 hover:text-green-400/70 hover:border-white/20'}`}
                             >
                                 <Zap size={18} /> YCloud (WhatsApp)
                             </button>
                             <button
                                 onClick={() => setActiveTab('meta')}
-                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'meta' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-200'}`}
+                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'meta' ? 'border-blue-500 text-blue-400 font-semibold bg-blue-500/5' : 'border-transparent text-gray-500 hover:text-blue-400/70 hover:border-white/20'}`}
                             >
                                 <Globe size={18} /> Meta Ads (Leadgen)
                             </button>
                             <button
                                 onClick={() => setActiveTab('others')}
-                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'others' ? 'border-indigo-500 text-indigo-500 font-semibold' : 'border-transparent text-gray-500 hover:text-indigo-500 hover:border-indigo-200'}`}
+                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'others' ? 'border-purple-500 text-purple-400 font-semibold bg-purple-500/5' : 'border-transparent text-gray-500 hover:text-purple-400/70 hover:border-white/20'}`}
                             >
                                 <Key size={18} /> Otras
                             </button>
                             <button
                                 onClick={() => setActiveTab('notifications')}
-                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'notifications' ? 'border-indigo-500 text-indigo-500 font-semibold' : 'border-transparent text-gray-500 hover:text-indigo-500 hover:border-indigo-200'}`}
+                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'notifications' ? 'border-indigo-500 text-indigo-400 font-semibold bg-indigo-500/5' : 'border-transparent text-gray-500 hover:text-indigo-400/70 hover:border-white/20'}`}
                             >
                                 <Bell size={18} /> Notificaciones
                             </button>
                             <button
                                 onClick={() => setActiveTab('maintenance')}
-                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'maintenance' ? 'border-amber-600 text-amber-600 font-semibold' : 'border-transparent text-gray-500 hover:text-amber-600 hover:border-amber-200'}`}
+                                className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-all flex items-center gap-2 ${activeTab === 'maintenance' ? 'border-amber-500 text-amber-400 font-semibold bg-amber-500/5' : 'border-transparent text-gray-500 hover:text-amber-400/70 hover:border-white/20'}`}
                             >
                                 <Database size={18} /> Mantenimiento
                             </button>
@@ -691,7 +691,7 @@ export default function ConfigView() {
             </div>
 
             {/* Content Area (Scrollable) */}
-            <div className="flex-1 overflow-y-auto bg-gray-50/50 scrollbar-thin scrollbar-thumb-gray-200">
+            <div className="flex-1 overflow-y-auto bg-[#050505] scrollbar-thin scrollbar-thumb-white/10">
                 <div className="p-6 max-w-6xl mx-auto pb-32">
                     {activeTab === 'general' && renderGeneralTab()}
                     {activeTab === 'ycloud' && user?.role === 'ceo' && renderYCloudTab()}

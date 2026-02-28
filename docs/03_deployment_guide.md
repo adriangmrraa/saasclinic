@@ -22,8 +22,8 @@ EasyPanel Dashboard
    - Version: 13+ (recomendado 13 o 15)
    - Username: postgres
    - Password: (strong password)
-   - Database: nexus_db
-3. Copiar conexión string: postgres://user:pass@host:5432/nexus_db
+   - Database: saascrm
+3. Copiar conexión string: postgres://user:pass@host:5432/saascrm
 4. Asignar a POSTGRES_DSN
 ```
 
@@ -140,14 +140,14 @@ async def lifespan(app: FastAPI):
     # Conecta a DB
     await db.connect()
     
-    # Ejecuta schema (dentalogic_schema.sql)
+    # Ejecuta schema (saas_crm_schema.sql)
     # El sistema usa un Smart Splitter para ejecutar cada sentencia individualmente
     # garantizando compatibilidad con funciones PL/pgSQL complejas.
     await sync_environment()
 ```
 
 **Si la BD es nueva:**
-- Se crean tablas desde `dentalogic_schema.sql` (ejecutar manualmente)
+- Se crean tablas desde `saas_crm_schema.sql` (ejecutar manualmente)
 - Se crea un "default tenant" usando las variables de entorno
 
 **Si ya existe:**
@@ -215,7 +215,7 @@ Para que el sistema sincronice eventos, es **CRÍTICO** compartir cada calendari
 
 1.  **Obtener Email de Service Account**:
     - Desde Google Cloud Console > IAM & Admin > Service Accounts.
-    - Copiar el email (ej: `dental-bot@project-id.iam.gserviceaccount.com`).
+    - Copiar el email (ej: `saas-bot@project-id.iam.gserviceaccount.com`).
 2.  **Compartir Calendario**:
     - Ir a Google Calendar (dueño del calendario).
     - Configuración > "Integrar el calendario" o "Compartir con personas específicas".

@@ -42,7 +42,7 @@ Este documento detalla la transformación real de la plataforma, desde un sistem
 5. [`05_tools_parametrizables.md`](05_tools_parametrizables.md) - Tool Registry
 6. [`06_system_prompt_dinamico.md`](06_system_prompt_dinamico.md) - Prompt Loader
 7. [`07_frontend_multinicho.md`](07_frontend_multinicho.md) - UI Architecture
-8. [`08_modelo_crm_ventas.md`](08_modelo_crm_ventas.md) - CRM Data Model
+8. [`08_modelo_crm_ventas.md`](08_modelo_crm_ventas.md) - SAAS CRM Data Model
 9. [`09_plan_migracion_fases.md`](09_plan_migracion_fases.md) - Este documento
 10. [`10_checklist_validacion.md`](10_checklist_validacion.md) - Validation guide
 
@@ -97,9 +97,9 @@ frontend_react/src/
 
 ---
 
-## ✅ Fase 2: CRM Data Model Design (COMPLETADA)
+## ✅ Fase 2: SAAS CRM Data Model Design (COMPLETADA)
 
-**Objetivo**: Diseñar esquema de datos para el segundo niche (CRM Sales).
+**Objetivo**: Diseñar esquema de datos para el segundo niche (SAAS CRM).
 
 ### Tablas Diseñadas:
 1. **`leads`** - Prospectos (equivalente a `patients`)
@@ -241,9 +241,9 @@ prompt = prompt_loader.load_prompt(niche_type, tenant_id)
 
 ---
 
-## ✅ Fase 8: CRM Data Model Implementation (COMPLETADA)
+## ✅ Fase 8: SAAS CRM Data Model Implementation (COMPLETADA)
 
-**Objetivo**: Implementar API y base de datos para el niche CRM.
+**Objetivo**: Implementar API y base de datos para el módulo SAAS CRM.
 
 ### Database
 **Migración aplicada** (ya existía en `db.py` como Patch 16):
@@ -269,7 +269,7 @@ prompt = prompt_loader.load_prompt(niche_type, tenant_id)
 
 ### Capacidades Habilitadas:
 ✅ Multi-tenancy con soberanía de datos  
-✅ Dos verticales soportados: Dental, CRM Sales  
+✅ Dos verticales soportados: Dental, SAAS CRM
 ✅ Carga dinámica de módulos por niche  
 ✅ API organizada por responsabilidad  
 ✅ Frontend actualizado para dental  
@@ -313,7 +313,7 @@ prompt = prompt_loader.load_prompt(niche_type, tenant_id)
 
 ## 🚀 Próximos Pasos (Futuro)
 
-### Fase 10: CRM Frontend (Pendiente)
+### Fase 10: SAAS CRM Frontend (Pendiente)
 - Crear vistas React para gestión de leads
 - Dashboard de campañas
 - UI para templates de WhatsApp

@@ -1,6 +1,6 @@
-# Modelo de Datos: CRM de Ventas
+# Modelo de Datos: SAAS CRM
 
-Este documento define las entidades y la estructura de datos necesaria para soportar el nicho de "CRM para Vendedores/Setters".
+Este documento define las entidades y la estructura de datos necesaria para soportar el módulo **SAAS CRM**.
 
 ## 1. Entidades de Base de Datos (PostgreSQL)
 

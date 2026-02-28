@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, ReactNod
 import { io, Socket } from 'socket.io-client';
 import { BACKEND_URL } from '../api/axios';
 import { useAuth } from './AuthContext';
+import { toast } from 'react-hot-toast';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -19,9 +20,9 @@ interface SocketProviderProps {
   autoConnect?: boolean;
 }
 
-export const SocketProvider: React.FC<SocketProviderProps> = ({ 
-  children, 
-  autoConnect = true 
+export const SocketProvider: React.FC<SocketProviderProps> = ({
+  children,
+  autoConnect = true
 }) => {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
@@ -46,7 +47,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       socketRef.current.on('connect', () => {
         console.log('Socket.IO connected:', socketRef.current?.id);
         setIsConnected(true);
-        
+
         // Notificar que estamos conectados
         socketRef.current?.emit('notification_connected', {
           status: 'connected',
@@ -67,7 +68,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       socketRef.current.on('reconnect', (attemptNumber) => {
         console.log('Socket.IO reconnected after', attemptNumber, 'attempts');
         setIsConnected(true);
-        
+
         // Re-suscribir a notificaciones si hay usuario
         if (user?.id) {
           subscribeToNotifications(user.id);
@@ -153,8 +154,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   useEffect(() => {
     if (isConnected && user?.id) {
       subscribeToNotifications(user.id);
+
+      // Suscribirse al tenant para eventos globales/IA
+      if (user.tenant_id) {
+        socketRef.current?.emit('subscribe_tenant', { tenant_id: user.tenant_id });
+        console.log('Subscribed to tenant events:', user.tenant_id);
+      }
     }
-  }, [isConnected, user?.id]);
+  }, [isConnected, user?.id, user?.tenant_id]);
 
   const value: SocketContextType = {
     socket: socketRef.current,
@@ -212,12 +219,40 @@ export const useSocketNotifications = () => {
     socket.on('notification_count_update', handleCountUpdate);
     socket.on('new_notification', handleNewNotification);
 
+    // Escuchar acciones de IA
+    const handleAiAction = (data: any) => {
+      console.log('AI Action received via socket:', data);
+
+      // Disparar toast
+      toast.success(`${data.title}: ${data.summary}`, {
+        duration: 5000,
+        icon: '✨',
+        style: {
+          background: '#120D1F',
+          color: '#fff',
+          border: '1px solid rgba(168, 85, 247, 0.3)',
+        }
+      });
+
+      // Añadir a la lista local para el NotificationCenter
+      setNewNotifications(prev => [{
+        ...data,
+        id: `ai_${Date.now()}`,
+        type: 'ai_action',
+        read: false,
+        created_at: new Date().toISOString()
+      }, ...prev.slice(0, 9)]);
+    };
+
+    socket.on('ai_action', handleAiAction);
+
     // Solicitar count inicial
     socket.emit('get_notification_count', { user_id: 'current' });
 
     return () => {
       socket.off('notification_count_update', handleCountUpdate);
       socket.off('new_notification', handleNewNotification);
+      socket.off('ai_action', handleAiAction);
     };
   }, [socket, isConnected]);
 

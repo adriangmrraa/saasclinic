@@ -30,11 +30,11 @@ Este proyecto se configura completamente mediante variables de entorno. En despl
 
 | Variable | Descripción | Ejemplo | Requerida |
 | :--- | :--- | :--- | :--- |
-| `STORE_NAME` | Nombre del negocio (legacy/fallback) | `CRM Ventas` | ❌ |
+| `STORE_NAME` | Nombre del negocio (legacy/fallback) | `SAAS CRM` | ❌ |
 | `BOT_PHONE_NUMBER` | Número de WhatsApp del bot (fallback) | `+5493756123456` | ❌ |
-| `COMPANY_NAME` | Nombre de la empresa usado como fallback | `Empresa de Ventas` | ❌ |
+| `COMPANY_NAME` | Nombre de la empresa usado como fallback | `Nexus Sales` | ❌ |
 | `STORE_LOCATION` | Ciudad/País | `Buenos Aires, Argentina` | ❌ |
-| `STORE_WEBSITE` | URL del negocio | `https://www.empresa.com` | ❌ |
+| `STORE_WEBSITE` | URL del negocio | `https://www.saas-crm.com` | ❌ |
 
 ### 2.2 Seguridad y RBAC (Nexus v7.6)
 
@@ -152,7 +152,7 @@ Este proyecto se configura completamente mediante variables de entorno. En despl
 
 ```bash
 # PostgreSQL
-POSTGRES_DSN=postgresql://user:strongpassword@postgres-host:5432/crmventas
+POSTGRES_DSN=postgresql://user:strongpassword@postgres-host:5432/saascrm
 
 # Redis
 REDIS_HOST=redis-host
@@ -233,7 +233,7 @@ SOCKETIO_MAX_HTTP_BUFFER_SIZE=5e6
 
 ```bash
 # ============================================
-# CRM VENTAS - CONFIGURACIÓN COMPLETA
+# SAAS CRM - CONFIGURACIÓN COMPLETA
 # Sprint 2 - Tracking Avanzado Implementado
 # ============================================
 
@@ -241,7 +241,7 @@ SOCKETIO_MAX_HTTP_BUFFER_SIZE=5e6
 NODE_ENV=production
 
 # DATABASE
-POSTGRES_DSN=postgresql://crmuser:StrongPass123@postgres-host:5432/crmventas
+POSTGRES_DSN=postgresql://crmuser:StrongPass123@postgres-host:5432/saascrm
 
 # REDIS
 REDIS_HOST=redis-host

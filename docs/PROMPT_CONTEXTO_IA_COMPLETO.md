@@ -1,6 +1,6 @@
-# Prompt de contexto global para IA – Proyecto CRM Ventas
+# Prompt de contexto global para IA – Proyecto SAAS CRM
 
-**Uso:** Copia todo el contenido de esta sección (desde "Eres un agente..." hasta el final del bloque) y pégalo al inicio de una nueva conversación con una IA. Así la IA tendrá contexto completo del proyecto **CRM Ventas** (Nexus Core, single-niche CRM de ventas) y sabrá cómo trabajar en fixes y cambios correctamente.
+**Uso:** Copia todo el contenido de esta sección (desde "Eres un agente..." hasta el final del bloque) y pégalo al inicio de una nueva conversación con una IA. Así la IA tendrá contexto completo del proyecto **SAAS CRM** (Nexus Core, plataforma multi-tenant de ventas y prospección) y sabrá cómo trabajar en fixes y cambios correctamente.
 
 ---
 
@@ -11,7 +11,7 @@
 **Prompt corto alternativo** (si solo querés indicar el contexto en una línea):
 
 ```
-Trabajo en el proyecto CRM Ventas (CRM de ventas multi-tenant + agente WhatsApp). Lee AGENTS.md (o .agent/agents.md) y docs/CONTEXTO_AGENTE_IA.md; aplica reglas de soberanía (tenant_id), i18n con t(), y no ejecutes SQL directo. Para flujos completos usa .agent/workflows/ (autonomy, specify, bug_fix, update-docs).
+Trabajo en el proyecto SAAS CRM (CRM de ventas multi-tenant + agente WhatsApp). Lee AGENTS.md (o .agent/agents.md) y docs/CONTEXTO_AGENTE_IA.md; aplica reglas de soberanía (tenant_id), i18n con t(), y estética SDG. Para flujos completos usa .agent/workflows/ (autonomy, specify, bug_fix).
 ```
 
 Para tareas grandes o cuando quieras que siga workflows y skills al pie de la letra, usá el **bloque completo** de abajo.
@@ -21,7 +21,7 @@ Para tareas grandes o cuando quieras que siga workflows y skills al pie de la le
 ## Bloque para copiar y pegar (inicio)
 
 ```
-Eres un agente de IA que trabaja en el proyecto **CRM Ventas** (plataforma multi-tenant de CRM de ventas: leads, pipeline, vendedores, agenda, chats; asistente por WhatsApp). Para entender el contexto global y trabajar correctamente en fixes o cambios, debes seguir esta guía de forma estricta.
+Eres un agente de IA que trabaja en el proyecto **SAAS CRM** (plataforma multi-tenant de CRM de ventas: leads, pipeline, vendedores, agenda, chats; asistente por WhatsApp). Para entender el contexto global y trabajar correctamente en fixes o cambios, debes seguir esta guía de forma estricta.
 
 --- CONTEXTO OBLIGATORIO ---
 
@@ -35,14 +35,14 @@ Eres un agente de IA que trabaja en el proyecto **CRM Ventas** (plataforma multi
    - **Backend:** Todas las consultas SQL (SELECT/INSERT/UPDATE/DELETE) deben filtrar por `tenant_id`. El aislamiento por sede es obligatorio.
    - **Backend – Auth:** Las rutas admin usan la dependencia `verify_admin_token` (JWT + header X-Admin-Token + rol). Para rutas solo CEO se comprueba `user_data.role == 'ceo'`.
    - **Frontend:** Rutas con hijos usan `path="/*"`. Cualquier texto visible debe usar `useTranslation()` y `t('namespace.key')`; añadir la clave en `frontend_react/src/locales/es.json`, `en.json` y `fr.json`.
-   - **Frontend – Scroll:** Layout global con `h-screen` y `overflow-hidden`; vistas con `flex-1 min-h-0 overflow-y-auto` para aislamiento de scroll.
+   - **Frontend – Estética SDG:** Layout global con `h-screen` y `overflow-hidden`; vistas con `flex-1 min-h-0 overflow-y-auto`. Seguir el estándar **Sovereign Dark Glass** (glassmorphism, bordes sutiles, gradientes).
    - **Base de datos:** NO ejecutar comandos SQL (psql) directamente. Si hace falta un cambio de esquema, añade un parche idempotente en `orchestrator_service/db.py` (bloques `DO $$ ... END $$`) y propón el comando al usuario si debe ejecutar algo manualmente.
-   - **Nombres de tools del agente (exactos):** `check_availability`, `book_appointment`, `triage_urgency`, `derivhumano`, `cancel_appointment`, `reschedule_appointment`, `list_services`. Todos respetan `tenant_id`.
+   - **Nombres de tools del agente (exactos):** `check_availability`, `book_event`, `list_sellers`, `list_products`, `convert_to_client`, `derivhumano`. Todos respetan `tenant_id`.
 
 3) WORKFLOWS (cuándo y cómo usarlos):
    - Los workflows están en **.agent/workflows/**.
    - **/autonomy** – Motor completo (scaffolding → specify → plan → gate → implement → verify…). Úsalo cuando te pidan "ejecutar autonomy" o "flujo completo". Lee `.agent/workflows/autonomy.md` y sigue las fases; detente si confianza <70%, drift crítico o tests fallan 3 veces.
-   - **/specify** – Generar una especificación técnica (.spec.md o doc en docs/) a partir de requerimientos vagos. Lee `.agent/workflows/specify.md`. Las especificaciones históricas se consolidaron en **docs/SPECS_IMPLEMENTADOS_INDICE.md** (los .spec.md antiguos fueron retirados). Incluye Soberanía de Datos y no ejecutar SQL directo.
+   - **/specify** – Generar una especificación técnica (.spec.md o doc en docs/) a partir de requerimientos vagos. Lee `.agent/workflows/specify.md`. Las especificaciones históricas se consolidaron en **docs/SPECS_IMPLEMENTADOS_INDICE.md**. Incluye Soberanía de Datos y no ejecutar SQL directo.
    - **/bug_fix** – Para diagnosticar y corregir bugs. Lee `.agent/workflows/bug_fix.md`.
    - **/update-docs** – Actualizar documentación. Lee `.agent/workflows/update-docs.md`. Aplica **Non-Destructive Fusion**: no eliminar secciones existentes, preservar formato, agregar o expandir sin borrar.
    - **/new_feature** – Nueva funcionalidad siguiendo arquitectura y protocolo (DB, GCal, WhatsApp, frontend). Lee `.agent/workflows/new_feature.md`.

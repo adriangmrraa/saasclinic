@@ -1,13 +1,13 @@
-# API Reference - CRM Ventas
+# API Reference - SAAS CRM
 
-Referencia de los endpoints del **Orchestrator** (FastAPI) para **CRM Ventas** (Nexus Core). Base URL típica: `http://localhost:8000` en desarrollo o la URL del servicio en producción.
+Referencia de los endpoints del **Orchestrator** (FastAPI) para **SAAS CRM** (Nexus Core). Base URL típica: `http://localhost:8000` en desarrollo o la URL deservicio en producción.
 
 ## Prefijos en CRM Ventas
 
 | Prefijo | Contenido |
 |---------|-----------|
 | **`/auth`** | Login, registro, clínicas, me, profile (público o con JWT). |
-| **`/admin/core`** | Rutas administrativas: usuarios, tenants, settings, **chat** (tenants, sessions, messages, read, human-intervention, remove-silence), **stats/summary**, **chat/urgencies**, config/deployment, internal/credentials. Requieren **JWT + X-Admin-Token**. |
+| **`/admin/core`** | Rutas administrativas: usuarios, tenants, settings, **chat** (tenants, sessions, messages, read, human-intervention, remove-silence), **stats/summary**, config/deployment, internal/credentials. Requieren **JWT + X-Admin-Token**. |
 | **`/admin/core/crm`** | Módulo CRM: **leads** (CRUD, phone/context), **clients**, **sellers**, **whatsapp/connections**, **templates**, **campaigns**, **agenda/events**. Requieren JWT + X-Admin-Token. |
 | **`/chat`** | POST: envío de mensaje al agente IA (usado por WhatsApp Service). |
 | **`/health`** | Health check (público). |
@@ -37,11 +37,11 @@ Sustituye `localhost:8000` por la URL del Orchestrator en tu entorno.
 7. [Estadísticas y urgencias (admin core)](#estadísticas-y-urgencias-admin-core)
 8. [CRM: Leads, clientes, vendedores, agenda](#crm-leads-clientes-vendedores-agenda)
 9. [Contexto de lead por teléfono](#contexto-de-lead-por-teléfono)
-10. [Pacientes (referencia legacy)](#pacientes)
-11. [Turnos (Appointments)](#turnos-appointments)
-12. [Profesionales / Vendedores](#profesionales)
-13. [Calendario y bloques](#calendario-y-bloques)
-14. [Tratamientos](#tratamientos-services)
+10. [Dominio CRM (Leads, Clientes, Agenda)](#dominio-crm-leads-clientes-agenda)
+11. [Vendedores / Closers](#profesionales)
+12. [Calendario y bloques](#calendario-y-bloques)
+13. [Servicios / Productos](#tratamientos-services)
+14. [Webhooks (Meta Ads)](#webhooks_meta_ads)
 15. [Webhooks (Meta Ads)](#webhooks-meta-ads)
 16. [Otros (health, chat IA)](#otros)
 
@@ -171,7 +171,7 @@ Devuelve datos de configuración del despliegue (feature flags, URLs, etc.) para
   "webhook_meta_url": "https://tu-crm.com/crm/webhook/meta",
   "orchestrator_url": "https://tu-crm.com",
   "environment": "production",
-  "company_name": "CRM Ventas"
+  "company_name": "SAAS CRM"
 }
 ```
 
@@ -616,10 +616,10 @@ Devuelve el contexto del lead para el panel de Chats (nombre, próximo evento, �
 
 Si no hay lead para ese teléfono en el tenant: `lead: null`, `upcoming_event: null`, `last_event: null`, `is_guest: true`.
 
-## Pacientes
+## Dominio CRM (Leads, Clientes, Agenda)
 
 > [!NOTE]
-> **CRM Ventas:** En este proyecto el contacto principal es el **lead** (tabla `leads`). El contexto para Chats se obtiene con `GET /admin/core/crm/leads/phone/{phone}/context`. Las rutas siguientes (pacientes, turnos con patient_id) se conservan como referencia para integraciones o specs legacy; el frontend actual usa leads, clients y agenda/events bajo `/admin/core/crm`.
+> **SAAS CRM:** En este proyecto el contacto principal es el **lead** (tabla `leads`). El contexto para Chats se obtiene con `GET /admin/core/crm/leads/phone/{phone}/context`. Las rutas heredadas de pacientes/turnos se conservan únicamente por compatibilidad de infraestructura; el frontend actual opera bajo `/admin/core/crm`.
 
 Todas las rutas de pacientes están aisladas por `tenant_id`.
 
@@ -794,7 +794,7 @@ En rutas de listado administrativas suelen soportarse:
 
 ---
 
-## CRM Sales — Leads y Prospección
+## SAAS CRM — Leads y Prospección
 
 > [!NOTE]
 > Todos los endpoints bajo `/admin/core/crm/*` requieren `Authorization: Bearer <JWT>` + `X-Admin-Token`.

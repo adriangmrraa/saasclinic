@@ -103,6 +103,18 @@ def register_notification_socket_handlers():
                 logger.info(f"User {user_id} unsubscribed from notifications")
         except Exception as e:
             logger.error(f"Error in unsubscribe_notifications: {e}")
+
+    @sio.on('subscribe_tenant')
+    async def handle_subscribe_tenant(sid, data):
+        """Suscribir cliente a eventos de un tenant (empresa)"""
+        try:
+            tenant_id = data.get('tenant_id')
+            if not tenant_id:
+                return
+            await sio.enter_room(sid, f"tenant_{tenant_id}")
+            logger.info(f"Client {sid} subscribed to tenant_{tenant_id}")
+        except Exception as e:
+            logger.error(f"Error in subscribe_tenant: {e}")
     
     @sio.on('mark_notification_read')
     async def handle_mark_notification_read(sid, data):
@@ -237,6 +249,20 @@ async def emit_new_notification(notification_data: Dict[str, Any]):
         
     except Exception as e:
         logger.error(f"Error emitting new notification: {e}")
+
+async def emit_ai_action(tenant_id: int, payload: Dict[str, Any]):
+    """
+    Emit standardized AI action event to the tenant room.
+    Format requirements:
+    - event_name: "ai_action"
+    - payload: { type, title, summary, lead_phone, lead_id, metadata? }
+    """
+    try:
+        room = f"tenant_{tenant_id}"
+        await sio.emit('ai_action', payload, room=room)
+        logger.info(f"🚀 AI_ACTION emitted to {room}: {payload.get('type')} - {payload.get('title')}")
+    except Exception as e:
+        logger.error(f"Error emitting ai_action: {e}")
 
 # Registrar handlers al importar
 register_notification_socket_handlers()

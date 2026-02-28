@@ -11,6 +11,7 @@ import { useSocket, useSocketNotifications } from '../context/SocketContext';
 import api from '../api/axios';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import AiActionCard from './AiActionCard';
 
 interface Notification {
   id: string;
@@ -412,83 +413,97 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                className={`transition-colors cursor-pointer ${notification.type === 'ai_action'
+                    ? ''
+                    : `p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`
                   }`}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="flex gap-3">
-                  {/* Icon */}
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getTypeIcon(notification.type)}
+                {notification.type === 'ai_action' ? (
+                  <div className="p-2">
+                    <AiActionCard
+                      title={notification.title}
+                      summary={notification.message || notification.metadata?.summary || ''}
+                      type={notification.metadata?.type || 'status_change'}
+                      timestamp={notification.created_at}
+                      metadata={notification.metadata}
+                    />
                   </div>
+                ) : (
+                  <div className="flex gap-3">
+                    {/* Icon */}
+                    <div className="flex-shrink-0 mt-0.5">
+                      {getTypeIcon(notification.type)}
+                    </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
-                          {notification.title}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {notification.message}
-                        </p>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {notification.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {notification.message}
+                          </p>
+                        </div>
+
+                        {!notification.read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
+                            className="flex-shrink-0 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            title={t('notifications.mark_as_read')}
+                          >
+                            <Check size={14} className="text-gray-500" />
+                          </button>
+                        )}
                       </div>
 
-                      {!notification.read && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markAsRead(notification.id);
-                          }}
-                          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                          title={t('notifications.mark_as_read')}
-                        >
-                          <Check size={14} className="text-gray-500" />
-                        </button>
-                      )}
-                    </div>
+                      {/* Metadata */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getPriorityColor(notification.priority)}`}>
+                          {getPriorityText(notification.priority)}
+                        </span>
 
-                    {/* Metadata */}
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getPriorityColor(notification.priority)}`}>
-                        {getPriorityText(notification.priority)}
-                      </span>
-
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatTime(notification.created_at)}
-                      </span>
-
-                      {notification.sender_name && (
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          • {notification.sender_name}
+                          {formatTime(notification.created_at)}
                         </span>
-                      )}
 
-                      {notification.related_entity_type && (
-                        <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                          <ChevronRight size={10} />
-                          {t(`notifications.entity_${notification.related_entity_type}`)}
-                        </span>
-                      )}
-                    </div>
+                        {notification.sender_name && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            • {notification.sender_name}
+                          </span>
+                        )}
 
-                    {/* Actions */}
-                    <div className="mt-3 flex gap-2">
-                      {notification.related_entity_id && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNotificationClick(notification);
-                          }}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
-                        >
-                          <ExternalLink size={12} />
-                          {t('notifications.view_entity')}
-                        </button>
-                      )}
+                        {notification.related_entity_type && (
+                          <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                            <ChevronRight size={10} />
+                            {t(`notifications.entity_${notification.related_entity_type}`)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-3 flex gap-2">
+                        {notification.related_entity_id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNotificationClick(notification);
+                            }}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
+                          >
+                            <ExternalLink size={12} />
+                            {t('notifications.view_entity')}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

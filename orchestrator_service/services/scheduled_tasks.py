@@ -142,6 +142,28 @@ class ScheduledTasksService:
                 
         except Exception as e:
             logger.error(f"Error in scheduled data cleanup: {e}")
+            
+    async def check_expired_trials(self):
+        """Bloquea cuentas cuyo trial ha finalizado"""
+        logger.info("Running scheduled trial expiration check")
+        
+        try:
+            async with get_db() as db:
+                result = await db.execute("""
+                    UPDATE tenants 
+                    SET subscription_status = 'expired' 
+                    WHERE subscription_status = 'trial' 
+                    AND trial_ends_at < NOW()
+                    RETURNING id
+                """)
+                updated_tenants = result.fetchall()
+                if updated_tenants:
+                    await db.commit()
+                    logger.info(f"Trials expired for tenants: {[t.id for t in updated_tenants]}")
+                else:
+                    logger.info("No newly expired trials found")
+        except Exception as e:
+            logger.error(f"Error checking expired trials: {e}")
     
     async def generate_daily_reports(self):
         """Generar reportes diarios para CEO"""
@@ -222,6 +244,15 @@ class ScheduledTasksService:
                 CronTrigger(hour=8, minute=0),
                 id='daily_reports',
                 name='Daily Reports',
+                replace_existing=True
+            )
+            
+            # 5. Verificación de trials expirados cada hora
+            self.scheduler.add_job(
+                self.check_expired_trials,
+                IntervalTrigger(hours=1),
+                id='check_expired_trials',
+                name='Trial Expiration Check',
                 replace_existing=True
             )
             

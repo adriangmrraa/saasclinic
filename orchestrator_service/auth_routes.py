@@ -10,6 +10,7 @@ from db import db
 from auth_service import auth_service
 from core.security import audit_access
 from core.rate_limiter import limiter
+from services.metrics_cache_service import metrics_cache_service
 
 router = APIRouter(prefix="/auth", tags=["Nexus Auth"])
 logger = logging.getLogger("auth_routes")
@@ -84,7 +85,7 @@ async def list_companies_public():
 
 
 @router.post("/register/wizard")
-@limiter.limit("3/minute")
+@limiter.limit("3/hour")
 async def register_wizard(request: Request, payload: WizardRegisterRequest):
     """
     SaaS Onboarding Wizard CRM Ventas
@@ -122,32 +123,50 @@ async def register_wizard(request: Request, payload: WizardRegisterRequest):
                     RETURNING id
                 """, payload.company_name, payload.industry, payload.company_size, payload.acquisition_source, json.dumps(tenant_config))
                 
-                # 4 & 5. Crear Usuario aprobado
+                # 4 & 5. Crear Usuario aprobado (Forzamos rol 'ceo' por ser el dueño del Trial)
                 await conn.execute("""
                     INSERT INTO users (id, email, password_hash, role, status, first_name, last_name, tenant_id)
                     VALUES ($1, $2, $3, $4, 'approved', $5, $6, $7)
-                """, user_id, payload.email, password_hash, payload.role, first_name, last_name, tenant_id)
+                """, user_id, payload.email, password_hash, 'ceo', first_name, last_name, tenant_id)
                 
                 # 6. Crear Vendedor asociado
                 uid = uuid.UUID(user_id)
                 await conn.execute("""
                     INSERT INTO professionals (tenant_id, name, user_id, specialty)
                     VALUES ($1, $2, $3, 'CEO/Admin')
-                """, tenant_id, payload.email, uid)
-
-                # También insertamos en 'sellers' porque el parche 12 asegura que 'sellers' exista para CRM Ventas
-                await conn.execute("""
                     INSERT INTO sellers (user_id, tenant_id, first_name, last_name, email, phone_number, is_active, created_at, updated_at)
                     VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), NOW())
-                    ON CONFLICT (user_id) DO NOTHING
                 """, uid, tenant_id, first_name, last_name, payload.email, payload.phone_number)
                 
-        # 7. Generar JWT y retornar
+                # 7. Data Seeding de Estados Iniciales del CRM (Para Kanban)
+                default_statuses = [
+                    ("new", "Nuevo", "blue", 10, False, False),
+                    ("contacted", "Contactado", "yellow", 20, False, False),
+                    ("interested", "Interesado", "orange", 30, False, False),
+                    ("negotiation", "Negociación", "purple", 40, False, False),
+                    ("closed_won", "Venta Ganada", "green", 50, True, True),
+                    ("closed_lost", "Venta Perdida", "red", 60, True, False)
+                ]
+                for (sys_name, disp_name, color, sort_o, is_closed, is_success) in default_statuses:
+                    await conn.execute("""
+                        INSERT INTO lead_statuses (tenant_id, system_name, display_name, color, sort_order, is_closed, is_success, is_active)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+                        ON CONFLICT (tenant_id, system_name) DO NOTHING
+                    """, tenant_id, sys_name, disp_name, color, sort_o, is_closed, is_success)
+                
+                # 8. Cache Invalidation (Zero-Downtime Provisioning)
+                # Ensure no stale metrics exist for this new tenant/seller if IDs collided in Redis
+                try:
+                    await metrics_cache_service.invalidate_metrics_cache(uid, tenant_id)
+                except Exception as e:
+                    logger.warning(f"Could not invalidate cache for new tenant {tenant_id}: {e}")
+                
+        # 7. Generar JWT y retornar (Forzamos 'ceo' en el payload del token y la respuesta)
         niche_type = "crm_sales"
         token_data = {
             "user_id": user_id,
             "email": payload.email,
-            "role": payload.role,
+            "role": "ceo",
             "tenant_id": tenant_id,
             "niche_type": niche_type,
         }
@@ -156,7 +175,7 @@ async def register_wizard(request: Request, payload: WizardRegisterRequest):
         user_profile = {
             "id": user_id,
             "email": payload.email,
-            "role": payload.role,
+            "role": "ceo",
             "tenant_id": tenant_id,
             "niche_type": niche_type,
         }
@@ -186,7 +205,7 @@ async def register_wizard(request: Request, payload: WizardRegisterRequest):
 
 
 @router.post("/register")
-@limiter.limit("3/minute")
+@limiter.limit("3/hour")
 async def register(request: Request, payload: UserRegister):
     """
     Registers a new user in 'pending' status.
